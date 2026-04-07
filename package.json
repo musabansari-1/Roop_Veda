@@ -1,0 +1,44 @@
+{
+  "name": "roop-veda-funnel",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prisma:prepare": "node scripts/prepare-prisma.cjs",
+    "dev": "npm run prisma:prepare && prisma db push --skip-generate && next dev",
+    "build": "node scripts/build-app.cjs",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:push": "npm run prisma:prepare && prisma db push --skip-generate",
+    "db:studio": "prisma studio",
+    "postinstall": "npm run prisma:prepare && prisma generate"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.11.2",
+    "@prisma/client": "^5.14.0",
+    "bcrypt": "^5.1.1",
+    "clsx": "^2.1.1",
+    "jose": "^5.2.4",
+    "lucide-react": "^0.395.0",
+    "next": "^14.2.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "resend": "^3.4.0",
+    "stripe": "^15.12.0",
+    "tailwind-merge": "^2.5.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.5",
+    "postcss": "^8.4.39",
+    "prisma": "^5.14.0",
+    "tailwindcss": "^3.4.7",
+    "typescript": "^5.5.3"
+  }
+}
