@@ -216,7 +216,7 @@ export function LandingPage() {
         {/* Header */}
         <header className="surface flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="eyebrow">CREATIVE TECHNOLOGIES</p>
+            <p className="eyebrow">ROOP VEDA</p>
             <p className="mt-2 text-lg font-semibold text-forest">
               Transform Your Face & Confidence
             </p>

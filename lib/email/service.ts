@@ -11,18 +11,55 @@ type EmailPayload = {
   html: string;
 };
 
+function logEmailDebug(message: string, details?: unknown) {
+  if (!env.RESEND_DEBUG_LOGGING) {
+    return;
+  }
+
+  if (details !== undefined) {
+    console.log(`[email] ${message}`, details);
+    return;
+  }
+
+  console.log(`[email] ${message}`);
+}
+
 async function deliverEmail(payload: EmailPayload) {
   if (!resend) {
     console.warn(`Resend disabled; skipped email: ${payload.subject}`);
     return { skipped: true };
   }
 
-  return resend.emails.send({
-    from: env.RESEND_FROM_EMAIL,
+  logEmailDebug("Sending email", {
     to: payload.to,
-    subject: payload.subject,
-    html: payload.html
+    from: env.RESEND_FROM_EMAIL,
+    subject: payload.subject
   });
+
+  try {
+    const response = await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html
+    });
+
+    logEmailDebug("Resend response", response);
+
+    if ("error" in response && response.error) {
+      console.error("[email] Resend API returned an error", response.error);
+    }
+
+    return response;
+  } catch (error) {
+    console.error("[email] Failed to send email", {
+      to: payload.to,
+      from: env.RESEND_FROM_EMAIL,
+      subject: payload.subject,
+      error
+    });
+    throw error;
+  }
 }
 
 function wrapEmail(body: string, title: string) {
@@ -129,6 +166,25 @@ export async function sendDashboardAccessEmail(
         </p>
       `,
       "Your dashboard access link"
+    )
+  });
+}
+
+export async function sendTestEmail(email: string) {
+  const dashboardUrl = absoluteUrl("/dashboard");
+
+  return deliverEmail({
+    to: email,
+    subject: "Roop Veda Resend test email",
+    html: wrapEmail(
+      `
+        <p style="font-size:16px;line-height:1.6;">This is a direct test email from your local Roop Veda environment.</p>
+        <p style="font-size:16px;line-height:1.6;">If you received this, your Resend API key and sender setup are working.</p>
+        <p style="margin:24px 0;">
+          <a href="${dashboardUrl}" style="display:inline-block;background:#19332d;color:#ffffff;padding:14px 22px;border-radius:999px;text-decoration:none;">Open dashboard</a>
+        </p>
+      `,
+      "Resend test successful"
     )
   });
 }

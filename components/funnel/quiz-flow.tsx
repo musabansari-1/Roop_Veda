@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { ChevronRight, Shield, Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,40 +17,104 @@ import {
   trackServerMetaEvent
 } from "@/lib/meta/browser";
 
-const questions = [
+interface Answer {
+  label: string;
+  value: string;
+  image?: string;
+}
+
+interface Question {
+  id: string;
+  prompt: string;
+  subPrompt?: string;
+  type: "gender" | "single-choice" | "multi-choice";
+  answers: (string | Answer)[];
+}
+
+const questions: Question[] = [
   {
-    id: "goal",
-    prompt: "What brought you here today?",
+    id: "gender",
+    prompt: "Would you like to eliminate wrinkles, hooded eyelids, neck lines & look 10 years younger?",
+    subPrompt: "Select Your Gender",
+    type: "gender",
     answers: [
-      "I want a guided transformation plan",
-      "I need clarity before I buy",
-      "I want premium video support",
-      "I need a routine that fits my schedule"
+      { 
+        label: "👨 Male", 
+        value: "male",
+        image: "https://promo.faceyoga.com/_next/image?url=https%3A%2F%2Fcdn.hoola.com%2Ffaceyoga-cms%2F1765369700175_1760430171864_thumbnail_man_c6dc188129.webp&w=1200&q=75"
+      },
+      { 
+        label: "👩 Female", 
+        value: "female",
+        image: "https://promo.faceyoga.com/_next/image?url=https%3A%2F%2Fcdn.hoola.com%2Ffaceyoga-cms%2F1765369692185_1760430181414_thumbnail_woman_288a247836.webp&w=1200&q=75"
+      }
+    ]
+  },
+  {
+    id: "age",
+    prompt: "What's your age range?",
+    type: "single-choice",
+    answers: [
+      "18-25",
+      "26-35",
+      "36-45",
+      "46-55",
+      "56-65",
+      "65+"
+    ]
+  },
+  {
+    id: "concerns",
+    prompt: "Which skin concerns bother you the most?",
+    type: "multi-choice",
+    answers: [
+      "👀 Fine lines & wrinkles",
+      "😞 Sagging skin",
+      "🎀 Double chin",
+      "😐 Forehead wrinkles",
+      "👃 Nasolabial folds",
+      "👂 Jawline definition",
+      "🌟 Overall skin tightness",
+      "💫 All of the above"
     ]
   },
   {
     id: "timeline",
-    prompt: "How soon do you want results to feel visible?",
-    answers: ["This week", "This month", "Within 90 days", "I want lasting change"]
-  },
-  {
-    id: "routine",
-    prompt: "How much time can you realistically commit each day?",
-    answers: ["5 minutes", "10-15 minutes", "20-30 minutes", "Flexible sessions"]
-  },
-  {
-    id: "support",
-    prompt: "What kind of support helps you stay consistent?",
+    prompt: "How soon would you like to see noticeable results?",
+    type: "single-choice",
     answers: [
-      "Simple bite-sized videos",
-      "A full step-by-step system",
-      "Gentle reminders and follow-up",
-      "A premium all-in-one dashboard"
+      "⚡ ASAP (within 2 weeks)",
+      "📅 Within 1 month",
+      "🎯 Within 3 months",
+      "🚀 I'm committed for long-term"
+    ]
+  },
+  {
+    id: "commitment",
+    prompt: "How much time can you dedicate daily?",
+    type: "single-choice",
+    answers: [
+      "⏱️ 5-10 minutes",
+      "🕐 10-15 minutes",
+      "⏰ 15-20 minutes",
+      "⏳ 20+ minutes"
+    ]
+  },
+  {
+    id: "experience",
+    prompt: "Have you tried face yoga before?",
+    type: "single-choice",
+    answers: [
+      "🆕 No, this is my first time",
+      "🤔 I tried it but didn't stick with it",
+      "✨ Yes, and I loved it!",
+      "📚 I'm familiar with it"
     ]
   },
   {
     id: "purchase",
     prompt: "Which option sounds closest to what you want next?",
+    type: "single-choice",
     answers: [
       "A lower-risk starter plan",
       "The most complete experience",
@@ -163,21 +228,35 @@ export function QuizFlow() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gradient-to-b from-forest/5 to-white px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
-        <div className="surface px-6 py-5">
-          <p className="eyebrow">Quiz entry</p>
-          <div className="mt-4 h-2 rounded-full bg-forest/10">
-            <div
-              className="h-2 rounded-full bg-ember transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+        {/* Progress Bar */}
+        <div className="sticky top-0 z-10 -mx-4 -mt-6 mb-4 bg-white px-4 py-4 shadow-sm sm:-mx-6 sm:px-6">
+          <div className="mx-auto max-w-4xl">
+            <div className="h-1 rounded-full bg-forest/10">
+              <div
+                className="h-1 rounded-full bg-gradient-to-r from-ember to-amber-500 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-between text-xs text-forest/60">
+              <span>
+                Step {step + 1} of {questions.length}
+              </span>
+              <span className="font-semibold text-forest">{progress}%</span>
+            </div>
           </div>
-          <div className="mt-3 flex items-center justify-between text-sm text-forest/70">
-            <span>
-              Question {step + 1} of {questions.length}
-            </span>
-            <span>{progress}% complete</span>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-2 text-xs text-forest/70">
+            <Shield className="h-4 w-4 text-ember" />
+            <span>Your data is secure with us</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-forest/70">
+            <Lock className="h-4 w-4 text-ember" />
+            <span>SSL Encrypted</span>
           </div>
         </div>
 
@@ -186,17 +265,98 @@ export function QuizFlow() {
           <h1 className="mt-4 font-display text-4xl leading-tight text-forest">
             {currentQuestion.prompt}
           </h1>
+          
+          {currentQuestion.subPrompt && (
+            <p className="mt-6 text-sm font-medium text-forest/70">
+              {currentQuestion.subPrompt}
+            </p>
+          )}
+
           <div className="mt-8 grid gap-4">
-            {currentQuestion.answers.map((answer) => (
-              <button
-                key={answer}
-                type="button"
-                onClick={() => handleAnswer(answer)}
-                className="rounded-[24px] border border-forest/10 bg-white px-5 py-5 text-left text-base font-medium text-forest transition hover:-translate-y-0.5 hover:border-ember/40 hover:shadow-glow"
-              >
-                {answer}
-              </button>
-            ))}
+            {currentQuestion.type === "gender" ? (
+              // Gender image selection
+              <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                {(currentQuestion.answers as Answer[]).map((answer) => (
+                  <button
+                    key={answer.value}
+                    type="button"
+                    onClick={() => handleAnswer(answer.value)}
+                    className={`group relative overflow-hidden rounded-2xl border-2 transition-all duration-200 ${
+                      answers[currentQuestion.id] === answer.value
+                        ? "border-ember shadow-glow"
+                        : "border-forest/10 hover:border-ember/40"
+                    }`}
+                  >
+                    <div className="aspect-video overflow-hidden bg-forest/5">
+                      <img
+                        src={answer.image}
+                        alt={answer.label}
+                        className="h-full w-full object-cover transition group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="bg-white px-4 py-3 text-center">
+                      <p className="text-base font-semibold text-forest">
+                        {answer.label}
+                      </p>
+                    </div>
+                    {answers[currentQuestion.id] === answer.value && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-ember/10 rounded-2xl">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ember text-white">
+                          ✓
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : currentQuestion.type === "multi-choice" ? (
+              // Multi-choice selection
+              <div className="space-y-3">
+                {(currentQuestion.answers as string[]).map((answer) => (
+                  <button
+                    key={answer}
+                    type="button"
+                    onClick={() => {
+                      const current = answers[currentQuestion.id]?.split(",") || [];
+                      const updated = current.includes(answer)
+                        ? current.filter((a) => a !== answer)
+                        : [...current, answer];
+                      handleAnswer(updated.join(","));
+                    }}
+                    className={`w-full rounded-2xl border-2 px-5 py-4 text-left font-medium transition-all duration-200 ${
+                      answers[currentQuestion.id]?.includes(answer)
+                        ? "border-ember bg-ember/5 text-forest shadow-glow"
+                        : "border-forest/10 bg-white text-forest hover:border-ember/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{answer}</span>
+                      {answers[currentQuestion.id]?.includes(answer) && (
+                        <span className="text-lg">✓</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              // Single choice selection
+              <div className="space-y-3">
+                {(currentQuestion.answers as string[]).map((answer) => (
+                  <button
+                    key={answer}
+                    type="button"
+                    onClick={() => handleAnswer(answer)}
+                    className={`w-full rounded-2xl border-2 px-5 py-4 text-left font-medium transition-all duration-200 ${
+                      answers[currentQuestion.id] === answer
+                        ? "border-ember bg-ember/5 text-forest shadow-glow"
+                        : "border-forest/10 bg-white text-forest hover:border-ember/40"
+                    }`}
+                  >
+                    {answer}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>

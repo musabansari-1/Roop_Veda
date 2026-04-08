@@ -20,6 +20,10 @@ const serverEnvSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  RESEND_DEBUG_LOGGING: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().default("Roop Veda <onboarding@example.com>"),
   GCS_BUCKET_NAME: z.string().optional(),
@@ -49,6 +53,8 @@ export const env = serverEnvSchema.parse({
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   DEV_ENABLE_BYPASS_CHECKOUT:
     process.env.DEV_ENABLE_BYPASS_CHECKOUT ?? "false",
+  RESEND_DEBUG_LOGGING:
+    process.env.RESEND_DEBUG_LOGGING ?? "false",
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   RESEND_FROM_EMAIL:
     process.env.RESEND_FROM_EMAIL ?? "Roop Veda <onboarding@example.com>",
