@@ -63,6 +63,27 @@ When that flag is enabled outside production and Stripe keys are absent:
 
 This bypass is intended only for local testing and is automatically off in production.
 
+### Temporary production fallback
+
+If the final gateway is delayed, you can temporarily allow specific approved emails
+to pass through checkout without Stripe in production.
+
+Set:
+
+```env
+TEMP_MANUAL_ACCESS_ENABLED="true"
+TEMP_MANUAL_ACCESS_EMAILS="approved1@example.com,approved2@example.com"
+```
+
+Behavior:
+
+1. approved emails can complete the funnel even if Stripe is not configured
+2. non-approved emails still see checkout blocked
+3. the resulting purchase is stored with `source="manual_access"`
+
+This is safer than a global production bypass because access is limited to a
+small allowlist that you control.
+
 ## Production database mode
 
 For GCP production, switch the database env to PostgreSQL:
@@ -73,6 +94,39 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB?schema=public"
 ```
 
 The Prisma prepare script will automatically swap in `prisma/schema.postgres.prisma` before generate/build/dev commands.
+
+### Neon integration
+
+This app is ready to use Neon as the production PostgreSQL provider.
+
+Prisma recommends:
+
+- pooled Neon connection string in `DATABASE_URL` for runtime
+- direct Neon connection string in `DIRECT_URL` for Prisma CLI operations
+
+Example:
+
+```env
+DATABASE_PROVIDER="postgresql"
+DATABASE_URL="postgresql://USER:PASSWORD@ep-example-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true&connect_timeout=15"
+DIRECT_URL="postgresql://USER:PASSWORD@ep-example.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=15"
+```
+
+Why both:
+
+- `DATABASE_URL` is used by the running app and should use Neon pooling
+- `DIRECT_URL` is used by Prisma schema operations such as `db push`
+
+On Cloud Run with Neon:
+
+- do not use SQLite
+- do not attach Cloud SQL
+- set `DATABASE_PROVIDER=postgresql`
+- set both `DATABASE_URL` and `DIRECT_URL`
+- keep `sslmode=require`
+
+If Neon scales to zero, cold starts can slow first connection attempts, so the
+extra `connect_timeout=15` is helpful.
 
 Recommended production command sequence:
 
@@ -122,6 +176,8 @@ Optional:
 - `NEXT_PUBLIC_DEFAULT_CURRENCY`
 - `NEXT_PUBLIC_BRAND_NAME`
 - `DEV_ENABLE_BYPASS_CHECKOUT`
+- `TEMP_MANUAL_ACCESS_ENABLED`
+- `TEMP_MANUAL_ACCESS_EMAILS`
 
 ## Funnel routes
 

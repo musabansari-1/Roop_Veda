@@ -27,6 +27,17 @@ const leadSchema = z.object({
 
 export const runtime = "nodejs";
 
+function logSideEffectFailure(
+  channel: "email" | "meta",
+  leadId: string,
+  error: unknown
+) {
+  console.error(`[lead] ${channel} side effect failed`, {
+    leadId,
+    error
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const body = leadSchema.parse(await request.json());
@@ -50,7 +61,7 @@ export async function POST(request: Request) {
       }
     });
 
-    await Promise.all([
+    const sideEffects = await Promise.allSettled([
       sendLeadContinueEmail(normalizedEmail, lead.id),
       sendMetaCapiEvent(
         {
@@ -67,12 +78,20 @@ export async function POST(request: Request) {
       )
     ]);
 
+    sideEffects.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        return;
+      }
+
+      logSideEffectFailure(index === 0 ? "email" : "meta", lead.id, result.reason);
+    });
+
     return NextResponse.json({
       success: true,
       leadId: lead.id
     });
   } catch (error) {
-    console.error(error);
+    console.error("[lead] capture failed", error);
     return NextResponse.json(
       { error: "Unable to capture lead." },
       { status: 400 }

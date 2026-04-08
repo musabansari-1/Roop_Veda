@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { env, isBypassCheckoutEnabled, isProduction } from "@/lib/env";
+import {
+  getTemporaryManualAccessEmails,
+  env,
+  isBypassCheckoutEnabled,
+  isProduction,
+  isTemporaryManualAccessEnabled
+} from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -22,6 +28,12 @@ export async function GET() {
     },
     development: {
       bypassCheckout: isBypassCheckoutEnabled
+    },
+    productionFallback: {
+      temporaryManualAccessEnabled: isTemporaryManualAccessEnabled,
+      approvedEmailCount: isTemporaryManualAccessEnabled
+        ? getTemporaryManualAccessEmails().length
+        : 0
     }
   });
 }

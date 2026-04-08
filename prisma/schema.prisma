@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -21,7 +22,7 @@ model User {
 model Lead {
   id          String     @id @default(cuid())
   email       String
-  quizAnswers String
+  quizAnswers Json
   source      String
   ipAddress   String?
   userAgent   String?

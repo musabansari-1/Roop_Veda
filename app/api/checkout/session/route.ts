@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { isBypassCheckoutEnabled } from "@/lib/env";
+import {
+  canUseTemporaryManualAccess,
+  isBypassCheckoutEnabled
+} from "@/lib/env";
 import { prisma } from "@/lib/prisma/client";
 import { getPlanById } from "@/lib/stripe/plans";
 import { getStripeServer, hasStripe } from "@/lib/stripe/server";
@@ -24,7 +27,14 @@ export async function GET(request: Request) {
     }
   });
 
-  if ((!hasStripe() && isBypassCheckoutEnabled) || sessionId.startsWith("dev_bypass_")) {
+  if (
+    (!hasStripe() &&
+      purchase &&
+      (isBypassCheckoutEnabled ||
+        canUseTemporaryManualAccess(purchase.email))) ||
+    sessionId.startsWith("dev_bypass_") ||
+    sessionId.startsWith("manual_access_")
+  ) {
     if (!purchase) {
       return NextResponse.json(
         { error: "Unable to verify checkout session." },

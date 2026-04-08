@@ -3,6 +3,7 @@ import { z } from "zod";
 const serverEnvSchema = z.object({
   DATABASE_PROVIDER: z.enum(["sqlite", "postgresql"]).default("sqlite"),
   DATABASE_URL: z.string().default("file:./dev.db"),
+  DIRECT_URL: z.string().optional(),
   AUTH_JWT_SECRET: z
     .string()
     .min(24)
@@ -20,6 +21,11 @@ const serverEnvSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  TEMP_MANUAL_ACCESS_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  TEMP_MANUAL_ACCESS_EMAILS: z.string().default(""),
   RESEND_DEBUG_LOGGING: z
     .enum(["true", "false"])
     .default("false")
@@ -36,6 +42,7 @@ const serverEnvSchema = z.object({
 export const env = serverEnvSchema.parse({
   DATABASE_PROVIDER: process.env.DATABASE_PROVIDER ?? "sqlite",
   DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
+  DIRECT_URL: process.env.DIRECT_URL,
   AUTH_JWT_SECRET:
     process.env.AUTH_JWT_SECRET ??
     "change-this-development-secret-before-production",
@@ -53,6 +60,10 @@ export const env = serverEnvSchema.parse({
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   DEV_ENABLE_BYPASS_CHECKOUT:
     process.env.DEV_ENABLE_BYPASS_CHECKOUT ?? "false",
+  TEMP_MANUAL_ACCESS_ENABLED:
+    process.env.TEMP_MANUAL_ACCESS_ENABLED ?? "false",
+  TEMP_MANUAL_ACCESS_EMAILS:
+    process.env.TEMP_MANUAL_ACCESS_EMAILS ?? "",
   RESEND_DEBUG_LOGGING:
     process.env.RESEND_DEBUG_LOGGING ?? "false",
   RESEND_API_KEY: process.env.RESEND_API_KEY,
@@ -68,6 +79,22 @@ export const env = serverEnvSchema.parse({
 export const isProduction = process.env.NODE_ENV === "production";
 export const isBypassCheckoutEnabled =
   !isProduction && env.DEV_ENABLE_BYPASS_CHECKOUT;
+export const isTemporaryManualAccessEnabled =
+  isProduction && env.TEMP_MANUAL_ACCESS_ENABLED;
+
+export function getTemporaryManualAccessEmails() {
+  return env.TEMP_MANUAL_ACCESS_EMAILS.split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function canUseTemporaryManualAccess(email: string) {
+  if (!isTemporaryManualAccessEnabled) {
+    return false;
+  }
+
+  return getTemporaryManualAccessEmails().includes(email.trim().toLowerCase());
+}
 
 type StringEnvKey = {
   [Key in keyof typeof env]: NonNullable<(typeof env)[Key]> extends string

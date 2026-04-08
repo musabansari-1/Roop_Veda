@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { env, isBypassCheckoutEnabled } from "@/lib/env";
+import {
+  canUseTemporaryManualAccess,
+  env,
+  isBypassCheckoutEnabled,
+  isTemporaryManualAccessEnabled
+} from "@/lib/env";
 import { sendMetaCapiEvent } from "@/lib/meta/server";
 import { prisma } from "@/lib/prisma/client";
 import { getPlanById } from "@/lib/stripe/plans";
@@ -32,13 +37,6 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!hasStripe() && !isBypassCheckoutEnabled) {
-      return NextResponse.json(
-        { error: "Stripe is not configured." },
-        { status: 503 }
-      );
-    }
-
     const body = checkoutSchema.parse(await request.json());
     const lead = await prisma.lead.findUnique({
       where: {
@@ -54,9 +52,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const canBypassCheckout =
+      isBypassCheckoutEnabled || canUseTemporaryManualAccess(lead.email);
+
+    if (!hasStripe() && !canBypassCheckout) {
+      return NextResponse.json(
+        {
+          error: isTemporaryManualAccessEnabled
+            ? "Payment is not configured yet and this email has not been approved for temporary manual access."
+            : "Stripe is not configured."
+        },
+        { status: 503 }
+      );
+    }
+
     let sessionId: string;
     let checkoutUrl: string;
     let purchaseStatus = "checkout_started";
+    let purchaseSource = lead.source;
 
     if (hasStripe()) {
       const stripe = getStripeServer();
@@ -93,9 +106,12 @@ export async function POST(request: Request) {
       sessionId = session.id;
       checkoutUrl = session.url ?? `${getBaseUrl()}/plans?leadId=${lead.id}`;
     } else {
-      sessionId = `dev_bypass_${body.eventId}`;
+      sessionId = isBypassCheckoutEnabled
+        ? `dev_bypass_${body.eventId}`
+        : `manual_access_${body.eventId}`;
       checkoutUrl = `${getBaseUrl()}/setup?session_id=${sessionId}&purchase_event_id=${body.eventId}`;
       purchaseStatus = "paid";
+      purchaseSource = isBypassCheckoutEnabled ? lead.source : "manual_access";
     }
 
     await prisma.purchase.upsert({
@@ -109,7 +125,7 @@ export async function POST(request: Request) {
         planId: plan.id,
         amount: plan.amount,
         currency: plan.currency,
-        source: lead.source,
+        source: purchaseSource,
         purchaseEventId: body.eventId
       },
       create: {
@@ -120,7 +136,7 @@ export async function POST(request: Request) {
         planId: plan.id,
         amount: plan.amount,
         currency: plan.currency,
-        source: lead.source,
+        source: purchaseSource,
         purchaseEventId: body.eventId
       }
     });
@@ -143,7 +159,7 @@ export async function POST(request: Request) {
             ? plan.currency
             : env.NEXT_PUBLIC_DEFAULT_CURRENCY
           ).toUpperCase(),
-          source: lead.source
+          source: purchaseSource
         }
       },
       request,

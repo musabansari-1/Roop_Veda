@@ -5,7 +5,10 @@ import { z } from "zod";
 import { attachSessionCookie } from "@/lib/auth/cookies";
 import { signSessionToken } from "@/lib/auth/jwt";
 import { sendAccountCreatedEmail } from "@/lib/email/service";
-import { isBypassCheckoutEnabled } from "@/lib/env";
+import {
+  canUseTemporaryManualAccess,
+  isBypassCheckoutEnabled
+} from "@/lib/env";
 import { prisma } from "@/lib/prisma/client";
 import { getStripeServer, hasStripe } from "@/lib/stripe/server";
 
@@ -23,15 +26,15 @@ const accountSetupSchema = z
 
 export const runtime = "nodejs";
 
+function logAccountEmailFailure(email: string, error: unknown) {
+  console.error("[account-setup] Account email failed", {
+    email,
+    error
+  });
+}
+
 export async function POST(request: Request) {
   try {
-    if (!hasStripe() && !isBypassCheckoutEnabled) {
-      return NextResponse.json(
-        { error: "Stripe is not configured." },
-        { status: 503 }
-      );
-    }
-
     const body = accountSetupSchema.parse(await request.json());
     let sessionEmail: string | undefined;
     let sessionId = body.sessionId;
@@ -76,6 +79,16 @@ export async function POST(request: Request) {
         return NextResponse.json(
           { error: "Payment has not been completed yet." },
           { status: 400 }
+        );
+      }
+
+      if (
+        !isBypassCheckoutEnabled &&
+        !canUseTemporaryManualAccess(purchase.email)
+      ) {
+        return NextResponse.json(
+          { error: "Temporary manual access is not approved for this email." },
+          { status: 403 }
         );
       }
 
@@ -148,7 +161,14 @@ export async function POST(request: Request) {
       }
     });
 
-    await sendAccountCreatedEmail(user.email);
+    const accountEmailResult = await sendAccountCreatedEmail(user.email).then(
+      () => ({ ok: true as const }),
+      (error) => ({ ok: false as const, error })
+    );
+
+    if (!accountEmailResult.ok) {
+      logAccountEmailFailure(user.email, accountEmailResult.error);
+    }
 
     const token = await signSessionToken({
       sub: user.id,

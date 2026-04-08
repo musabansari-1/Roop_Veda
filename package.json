@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "prisma:prepare": "node scripts/prepare-prisma.cjs",
-    "dev": "npm run prisma:prepare && prisma db push --skip-generate && next dev",
+    "prisma:sync": "npm run prisma:prepare && prisma generate && prisma db push --skip-generate",
+    "dev": "npm run prisma:sync && next dev",
     "build": "node scripts/build-app.cjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:push": "npm run prisma:prepare && prisma db push --skip-generate",
+    "db:push": "npm run prisma:sync",
     "db:studio": "prisma studio",
     "postinstall": "npm run prisma:prepare && prisma generate"
   },

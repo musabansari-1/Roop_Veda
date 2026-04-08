@@ -204,7 +204,13 @@ export function QuizFlow() {
         })
       });
 
-      const data = (await response.json()) as { error?: string; leadId?: string };
+      let data: { error?: string; leadId?: string } = {};
+
+      try {
+        data = (await response.json()) as { error?: string; leadId?: string };
+      } catch (parseError) {
+        console.error("[quiz] Failed to parse lead response", parseError);
+      }
 
       if (!response.ok || !data.leadId) {
         throw new Error(data.error ?? "Failed to save your lead.");

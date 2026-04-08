@@ -11,6 +11,17 @@ import { getPlanById } from "@/lib/stripe/plans";
 import { getStripeServer } from "@/lib/stripe/server";
 import { absoluteUrl } from "@/lib/utils";
 
+function logWebhookSideEffectFailure(
+  channel: "email" | "meta",
+  sessionId: string,
+  error: unknown
+) {
+  console.error(`[stripe-webhook] ${channel} side effect failed`, {
+    sessionId,
+    error
+  });
+}
+
 async function handleCompletedSession(
   session: Stripe.Checkout.Session,
   request: Request
@@ -83,7 +94,7 @@ async function handleCompletedSession(
     }
   });
 
-  await Promise.all([
+  const sideEffects = await Promise.allSettled([
     sendPaymentConfirmationEmail(email, plan?.name ?? "Roop Veda Plan"),
     sendMetaCapiEvent(
       {
@@ -115,6 +126,18 @@ async function handleCompletedSession(
       }
     )
   ]);
+
+  sideEffects.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      return;
+    }
+
+    logWebhookSideEffectFailure(
+      index === 0 ? "email" : "meta",
+      session.id,
+      result.reason
+    );
+  });
 }
 
 export const runtime = "nodejs";
