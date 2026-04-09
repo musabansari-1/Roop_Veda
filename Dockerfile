@@ -1,6 +1,8 @@
 FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY scripts ./scripts
+COPY prisma ./prisma
 RUN npm ci
 
 FROM node:20-bookworm-slim AS builder
