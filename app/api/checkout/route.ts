@@ -73,8 +73,9 @@ export async function POST(request: Request) {
 
     if (hasStripe()) {
       const stripe = getStripeServer();
-      const successUrl = `${getBaseUrl()}/setup?session_id={CHECKOUT_SESSION_ID}&purchase_event_id=${body.eventId}`;
-      const cancelUrl = `${getBaseUrl()}/plans?leadId=${lead.id}`;
+      const baseUrl = getBaseUrl(request);
+      const successUrl = `${baseUrl}/setup?session_id={CHECKOUT_SESSION_ID}&purchase_event_id=${body.eventId}`;
+      const cancelUrl = `${baseUrl}/plans?leadId=${lead.id}`;
 
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
@@ -104,12 +105,13 @@ export async function POST(request: Request) {
       });
 
       sessionId = session.id;
-      checkoutUrl = session.url ?? `${getBaseUrl()}/plans?leadId=${lead.id}`;
+      checkoutUrl = session.url ?? `${baseUrl}/plans?leadId=${lead.id}`;
     } else {
+      const baseUrl = getBaseUrl(request);
       sessionId = isBypassCheckoutEnabled
         ? `dev_bypass_${body.eventId}`
         : `manual_access_${body.eventId}`;
-      checkoutUrl = `${getBaseUrl()}/setup?session_id=${sessionId}&purchase_event_id=${body.eventId}`;
+      checkoutUrl = `${baseUrl}/setup?session_id=${sessionId}&purchase_event_id=${body.eventId}`;
       purchaseStatus = "paid";
       purchaseSource = isBypassCheckoutEnabled ? lead.source : "manual_access";
     }
