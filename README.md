@@ -166,9 +166,9 @@ Meta:
 GCS:
 
 - `GCS_BUCKET_NAME`
-- `GCP_PROJECT_ID`
-- `GCP_CLIENT_EMAIL`
-- `GCP_PRIVATE_KEY`
+- `GCP_PROJECT_ID` optional on Cloud Run
+- `GCP_CLIENT_EMAIL` optional outside Cloud Run only
+- `GCP_PRIVATE_KEY` optional outside Cloud Run only
 
 Optional:
 
@@ -235,19 +235,75 @@ export interface VideoProvider {
 This repo includes:
 
 - `Dockerfile` for Cloud Run
-- `cloudbuild.yaml` for container builds
+- `cloudbuild.yaml` for build + deploy to Cloud Run
 - `output: "standalone"` in Next.js config
 
 Suggested GCP flow:
 
 1. Create a private GCS bucket for videos.
 2. Store video metadata in the `Video` table with `gcsPath` values.
-3. Configure Cloud SQL PostgreSQL and set production database env vars.
-4. Configure a service account with signed URL access to the bucket.
-5. Build and deploy with Cloud Build / Cloud Run.
-6. Set Stripe webhook target to `/api/stripe/webhook`.
-7. Set Meta Pixel and Conversions API credentials.
-8. Set Resend API credentials and verified sender domain.
+3. Configure Neon PostgreSQL and set production database env vars.
+4. Configure a Cloud Run service account with signed URL access to the bucket.
+5. Store secrets in Secret Manager.
+6. Build and deploy with Cloud Build / Cloud Run.
+7. Set Stripe webhook target to `/api/stripe/webhook`.
+8. Set Meta Pixel and Conversions API credentials.
+9. Set Resend API credentials and verified sender domain.
+
+### Cloud Run with Neon
+
+Recommended runtime env vars:
+
+```env
+DATABASE_PROVIDER="postgresql"
+NEXT_PUBLIC_APP_URL="https://YOUR_CLOUD_RUN_URL"
+NEXT_PUBLIC_BRAND_NAME="Roop Veda"
+NEXT_PUBLIC_DEFAULT_CURRENCY="usd"
+GCS_BUCKET_NAME="YOUR_PRIVATE_BUCKET"
+TEMP_MANUAL_ACCESS_ENABLED="false"
+META_API_VERSION="v19.0"
+```
+
+Recommended Secret Manager secrets:
+
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `AUTH_JWT_SECRET`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `META_ACCESS_TOKEN`
+- `NEXT_PUBLIC_META_PIXEL_ID`
+
+For Cloud Run with Google Cloud Storage:
+
+- keep the bucket private
+- do not set `GCP_CLIENT_EMAIL` or `GCP_PRIVATE_KEY` unless you intentionally want to use a manual service-account key
+- let the Cloud Run service account authenticate automatically
+
+IAM for the Cloud Run service account:
+
+- `roles/storage.objectViewer` on the video bucket
+- `roles/secretmanager.secretAccessor`
+- `roles/iam.serviceAccountTokenCreator` on the same service account so signed URLs can be generated reliably
+
+Deploy with Cloud Build:
+
+```bash
+gcloud builds submit \
+  --config=cloudbuild.yaml \
+  --substitutions=_IMAGE_URI=asia-south1-docker.pkg.dev/PROJECT_ID/roop-veda/web:latest,_SERVICE_NAME=roop-veda-web,_REGION=asia-south1,_SERVICE_ACCOUNT=roop-veda-run@PROJECT_ID.iam.gserviceaccount.com,_ENV_VARS=DATABASE_PROVIDER=postgresql,NEXT_PUBLIC_APP_URL=https://YOUR_RUN_URL,NEXT_PUBLIC_BRAND_NAME=Roop\ Veda,NEXT_PUBLIC_DEFAULT_CURRENCY=usd,GCS_BUCKET_NAME=YOUR_BUCKET,TEMP_MANUAL_ACCESS_ENABLED=false,META_API_VERSION=v19.0,_SECRET_VARS=DATABASE_URL=DATABASE_URL:latest,DIRECT_URL=DIRECT_URL:latest,AUTH_JWT_SECRET=AUTH_JWT_SECRET:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest,RESEND_API_KEY=RESEND_API_KEY:latest,RESEND_FROM_EMAIL=RESEND_FROM_EMAIL:latest,META_ACCESS_TOKEN=META_ACCESS_TOKEN:latest,NEXT_PUBLIC_META_PIXEL_ID=NEXT_PUBLIC_META_PIXEL_ID:latest \
+  .
+```
+
+After deploy:
+
+1. open `/api/health`
+2. verify database, GCS, and secret-backed integrations
+3. test `/quiz`
+4. test `/forgot-password`
+5. if Stripe is live, configure and test the webhook
 
 ## Notes
 

@@ -5,5 +5,30 @@ steps:
       - -t
       - ${_IMAGE_URI}
       - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_IMAGE_URI}
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE_NAME}
+      - --image=${_IMAGE_URI}
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --service-account=${_SERVICE_ACCOUNT}
+      - --set-env-vars=${_ENV_VARS}
+      - --update-secrets=${_SECRET_VARS}
 images:
   - ${_IMAGE_URI}
+substitutions:
+  _IMAGE_URI: asia-south1-docker.pkg.dev/$PROJECT_ID/roop-veda/web:latest
+  _SERVICE_NAME: roop-veda-web
+  _REGION: asia-south1
+  _SERVICE_ACCOUNT: roop-veda-run@$PROJECT_ID.iam.gserviceaccount.com
+  _ENV_VARS: DATABASE_PROVIDER=postgresql,NEXT_PUBLIC_APP_URL=https://REPLACE_ME,NEXT_PUBLIC_BRAND_NAME=Roop Veda,NEXT_PUBLIC_DEFAULT_CURRENCY=usd,GCS_BUCKET_NAME=REPLACE_ME,TEMP_MANUAL_ACCESS_ENABLED=false,META_API_VERSION=v19.0
+  _SECRET_VARS: DATABASE_URL=DATABASE_URL:latest,DIRECT_URL=DIRECT_URL:latest,AUTH_JWT_SECRET=AUTH_JWT_SECRET:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest,RESEND_API_KEY=RESEND_API_KEY:latest,RESEND_FROM_EMAIL=RESEND_FROM_EMAIL:latest,META_ACCESS_TOKEN=META_ACCESS_TOKEN:latest,NEXT_PUBLIC_META_PIXEL_ID=NEXT_PUBLIC_META_PIXEL_ID:latest
