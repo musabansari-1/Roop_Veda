@@ -92,9 +92,20 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[lead] capture failed", error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: "Invalid lead payload.",
+          issues: error.issues
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Unable to capture lead." },
-      { status: 400 }
+      { status: 500 }
     );
   }
 }
