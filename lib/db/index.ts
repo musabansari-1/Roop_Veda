@@ -139,6 +139,34 @@ async function initializeSchema() {
       "userId" text not null references "User" ("id") on delete cascade
     )
   `;
+
+  await sql`
+    alter table "User"
+    alter column "createdAt" set default now(),
+    alter column "updatedAt" set default now()
+  `;
+
+  await sql`
+    alter table "Lead"
+    alter column "createdAt" set default now()
+  `;
+
+  await sql`
+    alter table "Video"
+    alter column "createdAt" set default now(),
+    alter column "updatedAt" set default now()
+  `;
+
+  await sql`
+    alter table "Purchase"
+    alter column "createdAt" set default now(),
+    alter column "updatedAt" set default now()
+  `;
+
+  await sql`
+    alter table "PasswordResetToken"
+    alter column "createdAt" set default now()
+  `;
 }
 
 export async function ensureDatabaseSchema() {
@@ -187,10 +215,11 @@ export async function createUser(input: {
   isPaid: boolean;
 }) {
   await ensureDatabaseSchema();
+  const now = new Date();
 
   const [user] = await sql<UserRecord[]>`
-    insert into "User" ("id", "email", "password", "isPaid")
-    values (${randomUUID()}, ${input.email}, ${input.password}, ${input.isPaid})
+    insert into "User" ("id", "email", "password", "isPaid", "createdAt", "updatedAt")
+    values (${randomUUID()}, ${input.email}, ${input.password}, ${input.isPaid}, ${now}, ${now})
     returning "id", "email", "password", "isPaid", "createdAt", "updatedAt"
   `;
 
@@ -232,6 +261,7 @@ export async function createLead(input: {
   pageUrl: string | null;
 }) {
   await ensureDatabaseSchema();
+  const now = new Date();
 
   const [lead] = await sql<LeadRecord[]>`
     insert into "Lead" (
@@ -247,7 +277,8 @@ export async function createLead(input: {
       "fbclid",
       "fbc",
       "fbp",
-      "pageUrl"
+      "pageUrl",
+      "createdAt"
     )
     values (
       ${randomUUID()},
@@ -262,7 +293,8 @@ export async function createLead(input: {
       ${input.fbclid},
       ${input.fbc},
       ${input.fbp},
-      ${input.pageUrl}
+      ${input.pageUrl},
+      ${now}
     )
     returning
       "id",
@@ -324,6 +356,7 @@ export async function upsertPurchaseBySessionId(input: {
   purchaseEventId?: string;
 }) {
   await ensureDatabaseSchema();
+  const now = new Date();
 
   const [purchase] = await sql<PurchaseRecord[]>`
     insert into "Purchase" (
@@ -337,7 +370,9 @@ export async function upsertPurchaseBySessionId(input: {
       "amount",
       "currency",
       "source",
-      "purchaseEventId"
+      "purchaseEventId",
+      "createdAt",
+      "updatedAt"
     )
     values (
       ${randomUUID()},
@@ -350,7 +385,9 @@ export async function upsertPurchaseBySessionId(input: {
       ${input.amount},
       ${input.currency},
       ${input.source ?? null},
-      ${input.purchaseEventId ?? null}
+      ${input.purchaseEventId ?? null},
+      ${now},
+      ${now}
     )
     on conflict ("stripeSessionId") do update
     set
@@ -415,6 +452,7 @@ export async function replacePasswordResetToken(input: {
   expiresAt: Date;
 }) {
   await ensureDatabaseSchema();
+  const now = new Date();
 
   await sql`
     delete from "PasswordResetToken"
@@ -422,8 +460,8 @@ export async function replacePasswordResetToken(input: {
   `;
 
   const [token] = await sql<PasswordResetTokenRecord[]>`
-    insert into "PasswordResetToken" ("id", "tokenHash", "expiresAt", "userId")
-    values (${randomUUID()}, ${input.tokenHash}, ${input.expiresAt}, ${input.userId})
+    insert into "PasswordResetToken" ("id", "tokenHash", "expiresAt", "userId", "createdAt")
+    values (${randomUUID()}, ${input.tokenHash}, ${input.expiresAt}, ${input.userId}, ${now})
     returning "id", "tokenHash", "expiresAt", "createdAt", "userId"
   `;
 

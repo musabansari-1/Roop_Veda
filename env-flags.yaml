@@ -1,0 +1,8 @@
+--update-env-vars:
+  NEXT_PUBLIC_APP_URL: "https://roop-veda-web-944910351582.asia-south1.run.app"
+  NEXT_PUBLIC_BRAND_NAME: "Roop Veda"
+  NEXT_PUBLIC_DEFAULT_CURRENCY: "usd"
+  GCS_BUCKET_NAME: "roop_veda_videos"
+  TEMP_MANUAL_ACCESS_ENABLED: "true"
+  TEMP_MANUAL_ACCESS_EMAILS: "approved1@example.com,approved2@example.com,anonymususer20251234@gmail.com"
+  META_API_VERSION: "v19.0"
