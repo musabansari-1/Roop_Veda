@@ -15,8 +15,8 @@ Production-ready Next.js 14 App Router funnel for:
 - Next.js 14 App Router
 - TypeScript
 - Tailwind CSS
-- Prisma ORM
-- SQLite for local development, PostgreSQL for production
+- Pure-JS PostgreSQL data layer via `postgres`
+- PostgreSQL for local and production
 - Stripe
 - Resend
 - bcrypt
@@ -27,9 +27,7 @@ Production-ready Next.js 14 App Router funnel for:
 ## Local setup
 
 1. Copy `.env.example` to `.env`.
-2. Keep the default local values:
-   - `DATABASE_PROVIDER="sqlite"`
-   - `DATABASE_URL="file:./dev.db"`
+2. Set `DATABASE_URL` to your local or hosted PostgreSQL connection string.
 3. Add your Stripe, Resend, Meta, and GCS credentials when you want those integrations live.
 4. Run:
 
@@ -38,7 +36,7 @@ npm install
 npm run dev
 ```
 
-`npm run dev` prepares the SQLite Prisma schema, pushes it to `prisma/dev.db`, and starts Next.js.
+`npm run dev` starts Next.js. The app lazily creates any missing tables in PostgreSQL on first database use.
 
 You can also inspect the current integration readiness at:
 
@@ -86,43 +84,31 @@ small allowlist that you control.
 
 ## Production database mode
 
-For GCP production, switch the database env to PostgreSQL:
+For GCP production, set the database env to PostgreSQL:
 
 ```env
-DATABASE_PROVIDER="postgresql"
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB?schema=public"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB?sslmode=require"
 ```
-
-The Prisma prepare script will automatically swap in `prisma/schema.postgres.prisma` before generate/build/dev commands.
 
 ### Neon integration
 
 This app is ready to use Neon as the production PostgreSQL provider.
 
-Prisma recommends:
+Recommended:
 
-- pooled Neon connection string in `DATABASE_URL` for runtime
-- direct Neon connection string in `DIRECT_URL` for Prisma CLI operations
+- use the pooled Neon connection string in `DATABASE_URL`
+- keep `sslmode=require`
 
 Example:
 
 ```env
-DATABASE_PROVIDER="postgresql"
 DATABASE_URL="postgresql://USER:PASSWORD@ep-example-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true&connect_timeout=15"
-DIRECT_URL="postgresql://USER:PASSWORD@ep-example.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=15"
 ```
-
-Why both:
-
-- `DATABASE_URL` is used by the running app and should use Neon pooling
-- `DIRECT_URL` is used by Prisma schema operations such as `db push`
 
 On Cloud Run with Neon:
 
-- do not use SQLite
 - do not attach Cloud SQL
-- set `DATABASE_PROVIDER=postgresql`
-- set both `DATABASE_URL` and `DIRECT_URL`
+- set `DATABASE_URL`
 - keep `sslmode=require`
 
 If Neon scales to zero, cold starts can slow first connection attempts, so the
@@ -132,7 +118,6 @@ Recommended production command sequence:
 
 ```bash
 npm install
-npm run db:push
 npm run build
 npm run start
 ```
@@ -143,7 +128,6 @@ Core:
 
 - `AUTH_JWT_SECRET`
 - `NEXT_PUBLIC_APP_URL`
-- `DATABASE_PROVIDER`
 - `DATABASE_URL`
 
 Stripe:

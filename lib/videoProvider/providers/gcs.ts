@@ -1,7 +1,7 @@
 import { Storage } from "@google-cloud/storage";
 
+import { findVideoById, listVideos } from "@/lib/db";
 import { env, requireEnv } from "@/lib/env";
-import { prisma } from "@/lib/prisma/client";
 
 export type VideoListItem = {
   id: string;
@@ -31,9 +31,7 @@ export class GCSVideoProvider {
   async getVideoUrl(videoId: string, userId: string) {
     void userId;
 
-    const video = await prisma.video.findUnique({
-      where: { id: videoId }
-    });
+    const video = await findVideoById(videoId);
 
     if (!video) {
       throw new Error("Video not found");
@@ -53,12 +51,7 @@ export class GCSVideoProvider {
   }
 
   async listVideos() {
-    const videos = await prisma.video.findMany({
-      orderBy: {
-        createdAt: "desc"
-      },
-      take: 30
-    });
+    const videos = await listVideos(30);
 
     return videos.map((video: (typeof videos)[number]) => ({
       id: video.id,

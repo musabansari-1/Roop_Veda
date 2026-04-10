@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
+import { findUserById } from "@/lib/db";
 import { verifySessionToken } from "@/lib/auth/jwt";
-import { prisma } from "@/lib/prisma/client";
 
 export async function getCurrentUser() {
   const token = cookies().get(SESSION_COOKIE_NAME)?.value;
@@ -13,9 +13,7 @@ export async function getCurrentUser() {
 
   try {
     const payload = await verifySessionToken(token);
-    return prisma.user.findUnique({
-      where: { id: payload.sub }
-    });
+    return findUserById(payload.sub);
   } catch {
     return null;
   }

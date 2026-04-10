@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { sendLeadContinueEmail } from "@/lib/email/service";
+import { createLead } from "@/lib/db";
 import { getRequestContext, sendMetaCapiEvent } from "@/lib/meta/server";
-import { prisma } from "@/lib/prisma/client";
 
 const attributionSchema = z
   .object({
@@ -44,21 +44,19 @@ export async function POST(request: Request) {
     const requestContext = getRequestContext(request);
     const normalizedEmail = body.email.toLowerCase();
 
-    const lead = await prisma.lead.create({
-      data: {
-        email: normalizedEmail,
-        quizAnswers: JSON.stringify(body.quizAnswers),
-        source: body.attribution?.source ?? "seo",
-        ipAddress: requestContext.ipAddress,
-        userAgent: requestContext.userAgent,
-        utmSource: body.attribution?.utmSource,
-        utmMedium: body.attribution?.utmMedium,
-        utmCampaign: body.attribution?.utmCampaign,
-        fbclid: body.attribution?.fbclid,
-        fbc: body.attribution?.fbc,
-        fbp: body.attribution?.fbp,
-        pageUrl: body.eventSourceUrl
-      }
+    const lead = await createLead({
+      email: normalizedEmail,
+      quizAnswers: body.quizAnswers,
+      source: body.attribution?.source ?? "seo",
+      ipAddress: requestContext.ipAddress ?? null,
+      userAgent: requestContext.userAgent ?? null,
+      utmSource: body.attribution?.utmSource ?? null,
+      utmMedium: body.attribution?.utmMedium ?? null,
+      utmCampaign: body.attribution?.utmCampaign ?? null,
+      fbclid: body.attribution?.fbclid ?? null,
+      fbc: body.attribution?.fbc ?? null,
+      fbp: body.attribution?.fbp ?? null,
+      pageUrl: body.eventSourceUrl
     });
 
     const sideEffects = await Promise.allSettled([

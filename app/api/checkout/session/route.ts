@@ -4,7 +4,7 @@ import {
   canUseTemporaryManualAccess,
   isBypassCheckoutEnabled
 } from "@/lib/env";
-import { prisma } from "@/lib/prisma/client";
+import { findPurchaseBySessionId } from "@/lib/db";
 import { getPlanById } from "@/lib/stripe/plans";
 import { getStripeServer, hasStripe } from "@/lib/stripe/server";
 
@@ -21,11 +21,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const purchase = await prisma.purchase.findUnique({
-    where: {
-      stripeSessionId: sessionId
-    }
-  });
+  const purchase = await findPurchaseBySessionId(sessionId);
 
   if (
     (!hasStripe() &&

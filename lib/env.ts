@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 const serverEnvSchema = z.object({
-  DATABASE_PROVIDER: z.enum(["sqlite", "postgresql"]).default("sqlite"),
-  DATABASE_URL: z.string().default("file:./dev.db"),
+  DATABASE_PROVIDER: z.string().optional(),
+  DATABASE_URL: z
+    .string()
+    .default("postgresql://postgres:postgres@127.0.0.1:5432/postgres"),
   DIRECT_URL: z.string().optional(),
   AUTH_JWT_SECRET: z
     .string()
@@ -40,8 +42,10 @@ const serverEnvSchema = z.object({
 });
 
 export const env = serverEnvSchema.parse({
-  DATABASE_PROVIDER: process.env.DATABASE_PROVIDER ?? "sqlite",
-  DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
+  DATABASE_PROVIDER: process.env.DATABASE_PROVIDER,
+  DATABASE_URL:
+    process.env.DATABASE_URL ??
+    "postgresql://postgres:postgres@127.0.0.1:5432/postgres",
   DIRECT_URL: process.env.DIRECT_URL,
   AUTH_JWT_SECRET:
     process.env.AUTH_JWT_SECRET ??

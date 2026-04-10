@@ -9,7 +9,13 @@ import {
   canUseTemporaryManualAccess,
   isBypassCheckoutEnabled
 } from "@/lib/env";
-import { prisma } from "@/lib/prisma/client";
+import {
+  createUser,
+  findPurchaseBySessionId,
+  findUserByEmail,
+  updateUser,
+  upsertPurchaseBySessionId
+} from "@/lib/db";
 import { getStripeServer, hasStripe } from "@/lib/stripe/server";
 
 const accountSetupSchema = z
@@ -69,11 +75,7 @@ export async function POST(request: Request) {
       purchaseEventId = session.metadata?.purchaseEventId;
       leadId = session.metadata?.leadId ?? undefined;
     } else {
-      const purchase = await prisma.purchase.findUnique({
-        where: {
-          stripeSessionId: body.sessionId
-        }
-      });
+      const purchase = await findPurchaseBySessionId(body.sessionId);
 
       if (!purchase || purchase.status !== "paid") {
         return NextResponse.json(
@@ -109,56 +111,35 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(body.password, 12);
-    const existingUser = await prisma.user.findUnique({
-      where: {
-        email: sessionEmail
-      }
-    });
+    const existingUser = await findUserByEmail(sessionEmail);
 
     const user = existingUser
-      ? await prisma.user.update({
-          where: {
-            id: existingUser.id
-          },
-          data: {
-            password: hashedPassword,
-            isPaid: true
-          }
+      ? await updateUser({
+          id: existingUser.id,
+          password: hashedPassword,
+          isPaid: true
         })
-      : await prisma.user.create({
-          data: {
-            email: sessionEmail,
-            password: hashedPassword,
-            isPaid: true
-          }
+      : await createUser({
+          email: sessionEmail,
+          password: hashedPassword,
+          isPaid: true
         });
 
-    await prisma.purchase.upsert({
-      where: {
-        stripeSessionId: sessionId
-      },
-      update: {
-        userId: user.id,
-        email: sessionEmail,
-        status: "paid",
-        planId,
-        amount,
-        currency,
-        source,
-        purchaseEventId
-      },
-      create: {
-        userId: user.id,
-        leadId,
-        email: sessionEmail,
-        stripeSessionId: sessionId,
-        status: "paid",
-        planId,
-        amount,
-        currency,
-        source,
-        purchaseEventId
-      }
+    if (!user) {
+      throw new Error("Unable to persist user.");
+    }
+
+    await upsertPurchaseBySessionId({
+      userId: user.id,
+      leadId,
+      email: sessionEmail,
+      stripeSessionId: sessionId,
+      status: "paid",
+      planId,
+      amount,
+      currency,
+      source,
+      purchaseEventId
     });
 
     const accountEmailResult = await sendAccountCreatedEmail(user.email).then(

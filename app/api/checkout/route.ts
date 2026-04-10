@@ -7,8 +7,8 @@ import {
   isBypassCheckoutEnabled,
   isTemporaryManualAccessEnabled
 } from "@/lib/env";
+import { findLeadById, upsertPurchaseBySessionId } from "@/lib/db";
 import { sendMetaCapiEvent } from "@/lib/meta/server";
-import { prisma } from "@/lib/prisma/client";
 import { getPlanById } from "@/lib/stripe/plans";
 import { getStripeServer, hasStripe } from "@/lib/stripe/server";
 import { getBaseUrl } from "@/lib/utils";
@@ -38,11 +38,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const body = checkoutSchema.parse(await request.json());
-    const lead = await prisma.lead.findUnique({
-      where: {
-        id: body.leadId
-      }
-    });
+    const lead = await findLeadById(body.leadId);
     const plan = getPlanById(body.planId);
 
     if (!lead || !plan) {
@@ -116,31 +112,16 @@ export async function POST(request: Request) {
       purchaseSource = isBypassCheckoutEnabled ? lead.source : "manual_access";
     }
 
-    await prisma.purchase.upsert({
-      where: {
-        stripeSessionId: sessionId
-      },
-      update: {
-        email: lead.email,
-        status: purchaseStatus,
-        leadId: lead.id,
-        planId: plan.id,
-        amount: plan.amount,
-        currency: plan.currency,
-        source: purchaseSource,
-        purchaseEventId: body.eventId
-      },
-      create: {
-        leadId: lead.id,
-        email: lead.email,
-        stripeSessionId: sessionId,
-        status: purchaseStatus,
-        planId: plan.id,
-        amount: plan.amount,
-        currency: plan.currency,
-        source: purchaseSource,
-        purchaseEventId: body.eventId
-      }
+    await upsertPurchaseBySessionId({
+      leadId: lead.id,
+      email: lead.email,
+      stripeSessionId: sessionId,
+      status: purchaseStatus,
+      planId: plan.id,
+      amount: plan.amount,
+      currency: plan.currency,
+      source: purchaseSource,
+      purchaseEventId: body.eventId
     });
 
     await sendMetaCapiEvent(

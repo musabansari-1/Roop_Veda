@@ -4,7 +4,11 @@ import bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/prisma/client";
+import {
+  deletePasswordResetTokensByUserId,
+  findPasswordResetTokenByHash,
+  updateUser
+} from "@/lib/db";
 
 const resetPasswordSchema = z
   .object({
@@ -28,11 +32,7 @@ export async function POST(request: Request) {
     const body = resetPasswordSchema.parse(await request.json());
     const tokenHash = hashToken(body.token);
 
-    const resetToken = await prisma.passwordResetToken.findUnique({
-      where: {
-        tokenHash
-      }
-    });
+    const resetToken = await findPasswordResetTokenByHash(tokenHash);
 
     if (!resetToken || resetToken.expiresAt < new Date()) {
       return NextResponse.json(
@@ -43,20 +43,12 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(body.password, 12);
 
-    await prisma.user.update({
-      where: {
-        id: resetToken.userId
-      },
-      data: {
-        password: hashedPassword
-      }
+    await updateUser({
+      id: resetToken.userId,
+      password: hashedPassword
     });
 
-    await prisma.passwordResetToken.deleteMany({
-      where: {
-        userId: resetToken.userId
-      }
-    });
+    await deletePasswordResetTokensByUserId(resetToken.userId);
 
     return NextResponse.json({
       success: true

@@ -3,25 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prisma:prepare": "node scripts/prepare-prisma.cjs",
-    "prisma:sync": "npm run prisma:prepare && prisma generate && prisma db push --skip-generate",
-    "dev": "npm run prisma:sync && next dev",
+    "dev": "next dev",
     "build": "node scripts/build-app.cjs",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "db:push": "npm run prisma:sync",
-    "db:studio": "prisma studio",
-    "postinstall": "npm run prisma:prepare && prisma generate"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.11.2",
-    "@prisma/client": "^5.14.0",
     "bcrypt": "^5.1.1",
     "clsx": "^2.1.1",
     "jose": "^5.2.4",
     "lucide-react": "^0.395.0",
     "next": "^14.2.5",
+    "postgres": "^3.4.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "resend": "^3.4.0",
@@ -38,7 +33,6 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
     "postcss": "^8.4.39",
-    "prisma": "^5.14.0",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.3"
   }

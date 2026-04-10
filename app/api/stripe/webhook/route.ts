@@ -4,9 +4,14 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { sendPaymentConfirmationEmail } from "@/lib/email/service";
+import {
+  findLeadById,
+  findUserByEmail,
+  updateUser,
+  upsertPurchaseBySessionId
+} from "@/lib/db";
 import { env, requireEnv } from "@/lib/env";
 import { sendMetaCapiEvent } from "@/lib/meta/server";
-import { prisma } from "@/lib/prisma/client";
 import { getPlanById } from "@/lib/stripe/plans";
 import { getStripeServer } from "@/lib/stripe/server";
 import { absoluteUrl } from "@/lib/utils";
@@ -41,57 +46,27 @@ async function handleCompletedSession(
   const amount = Number(session.amount_total ?? 0);
   const currency = (session.currency ?? env.NEXT_PUBLIC_DEFAULT_CURRENCY).toLowerCase();
   const plan = getPlanById(planId);
-  const user = await prisma.user.findUnique({
-    where: {
-      email
-    }
-  });
-  const lead = leadId
-    ? await prisma.lead.findUnique({
-        where: {
-          id: leadId
-        }
-      })
-    : null;
+  const user = await findUserByEmail(email);
+  const lead = leadId ? await findLeadById(leadId) : null;
 
   if (user && !user.isPaid) {
-    await prisma.user.update({
-      where: {
-        id: user.id
-      },
-      data: {
-        isPaid: true
-      }
+    await updateUser({
+      id: user.id,
+      isPaid: true
     });
   }
 
-  await prisma.purchase.upsert({
-    where: {
-      stripeSessionId: session.id
-    },
-    update: {
-      userId: user?.id,
-      leadId,
-      email,
-      status: "paid",
-      planId,
-      amount,
-      currency,
-      source,
-      purchaseEventId
-    },
-    create: {
-      userId: user?.id,
-      leadId,
-      email,
-      stripeSessionId: session.id,
-      status: "paid",
-      planId,
-      amount,
-      currency,
-      source,
-      purchaseEventId
-    }
+  await upsertPurchaseBySessionId({
+    userId: user?.id,
+    leadId,
+    email,
+    stripeSessionId: session.id,
+    status: "paid",
+    planId,
+    amount,
+    currency,
+    source,
+    purchaseEventId
   });
 
   const sideEffects = await Promise.allSettled([

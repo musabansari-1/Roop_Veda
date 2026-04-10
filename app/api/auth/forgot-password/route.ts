@@ -3,8 +3,11 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  findUserByEmail,
+  replacePasswordResetToken
+} from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email/service";
-import { prisma } from "@/lib/prisma/client";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email()
@@ -20,28 +23,16 @@ export async function POST(request: Request) {
   try {
     const body = forgotPasswordSchema.parse(await request.json());
     const normalizedEmail = body.email.toLowerCase();
-    const user = await prisma.user.findUnique({
-      where: {
-        email: normalizedEmail
-      }
-    });
+    const user = await findUserByEmail(normalizedEmail);
 
     if (user) {
       const rawToken = crypto.randomBytes(32).toString("hex");
       const tokenHash = hashToken(rawToken);
 
-      await prisma.passwordResetToken.deleteMany({
-        where: {
-          userId: user.id
-        }
-      });
-
-      await prisma.passwordResetToken.create({
-        data: {
-          tokenHash,
-          userId: user.id,
-          expiresAt: new Date(Date.now() + 1000 * 60 * 30)
-        }
+      await replacePasswordResetToken({
+        userId: user.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 30)
       });
 
       await sendPasswordResetEmail(user.email, rawToken);
