@@ -53,17 +53,17 @@ const benefits = [
 const transformations = [
   {
     title: "Visibly Lifted Eyelids & Brow",
-    beforeImage: "https://roopveda.co.in/Images/camparison1.png",
+    beforeImage: "/images/camparison1.png",
     highlight: "Lifted Eyelids"
   },
   {
     title: "Clearer, Brighter Complexion",
-    beforeImage: "https://roopveda.co.in/Images/camparison2.png",
+    beforeImage: "/images/camparison2.png",
     highlight: "Brighter Skin"
   },
   {
     title: "Smoothed Fine Lines & Wrinkles",
-    beforeImage: "https://roopveda.co.in/Images/camparison3.png",
+    beforeImage: "/images/camparison3.png",
     highlight: "Smooth Skin"
   }
 ];
@@ -428,9 +428,10 @@ export function LandingPage() {
             {transformations.map((transform) => (
               <div key={transform.title} className="surface overflow-hidden">
                 <div className="bg-gradient-to-br from-ember/10 to-forest/10 h-48 flex items-center justify-center">
-                  <div className="text-center p-4">
-                    <p className="text-sm font-semibold text-forest/60 mb-2">Before / After Comparison</p>
-                    <p className="text-lg font-bold text-forest">{transform.highlight}</p>
+                  <div className="text-center">
+                    {/* <p className="text-sm font-semibold text-forest/60 mb-2">Before / After Comparison</p>
+                    <p className="text-lg font-bold text-forest">{transform.highlight}</p> */}
+                    <img src={transform.beforeImage} alt={transform.title} className="w-full h-auto rounded-lg object-cover border border-forest/15" />
                   </div>
                 </div>
                 <div className="px-6 py-6">
