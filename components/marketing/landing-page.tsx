@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const IMGS = {
   hero: "https://roopveda.co.in/Images/index-main-girl.png",
@@ -16,7 +16,7 @@ const NAV_LINKS = [
   { label: "Reviews", href: "#reviews" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
-  { label: "About", href: "#about" }
+  // { label: "About", href: "#about" }
 ];
 
 const BENEFITS = [
@@ -214,16 +214,12 @@ const CSS = `
 .rv-home .bcard-icon { font-size:1.7rem; margin-bottom:10px; }
 .rv-home .bcard h3 { font-size:0.95rem; font-weight:700; color:var(--text-h); margin-bottom:7px; }
 .rv-home .bcard p { font-size:0.83rem; color:var(--text-b); line-height:1.65; }
-.rv-home .cmp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
-.rv-home .cmp-ba-labels { display:flex; justify-content:space-between; padding:10px 16px 6px; font-size:0.68rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--pink); }
-.rv-home .cmp-wrap { position:relative; overflow:hidden; aspect-ratio:3/4; cursor:col-resize; user-select:none; }
-.rv-home .cmp-under, .rv-home .cmp-over { position:absolute; inset:0; }
-.rv-home .cmp-over { overflow:hidden; }
-.rv-home .cmp-under img, .rv-home .cmp-over img { width:100%; height:100%; object-fit:cover; }
-.rv-home .cmp-over img { filter:saturate(1.12) brightness(1.04); }
-.rv-home .cmp-line { position:absolute; top:0; bottom:0; width:2.5px; background:#fff; transform:translateX(-50%); box-shadow:0 0 8px rgba(233,30,140,0.4); pointer-events:none; }
-.rv-home .cmp-knob { position:absolute; top:50%; transform:translate(-50%,-50%); width:40px; height:40px; border-radius:50%; background:#fff; box-shadow:0 2px 14px rgba(0,0,0,0.22); display:flex; align-items:center; justify-content:center; }
-.rv-home .cmp-label { padding:12px 16px; text-align:center; font-size:0.88rem; font-weight:600; color:var(--text-b); }
+.rv-home .cmp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; align-items:start; }
+.rv-home .cmp-card { overflow:hidden; padding:20px; background:linear-gradient(180deg, #fff 0%, #fdf6fa 100%); box-shadow:0 10px 32px rgba(233,30,140,0.08); }
+.rv-home .cmp-ba-labels { display:flex; justify-content:space-between; padding:0 2px 12px; font-size:0.68rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--pink); }
+.rv-home .cmp-wrap { overflow:hidden; border-radius:16px; background:#fff; border:1px solid var(--pink-border); }
+.rv-home .cmp-wrap img { display:block; width:100%; height:auto; aspect-ratio:auto; }
+.rv-home .cmp-label { padding:15px 4px 0; text-align:center; font-size:0.88rem; font-weight:600; color:var(--text-b); }
 .rv-home .reviews-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
 .rv-home .rcard { padding:28px 24px; transition:transform 0.22s, box-shadow 0.22s; }
 .rv-home .stars { color:var(--gold); font-size:0.95rem; letter-spacing:2px; margin-bottom:10px; }
@@ -290,41 +286,12 @@ const CSS = `
 @media (max-width:600px) { .rv-home .benefits-2x2, .rv-home .benefits-4col, .rv-home .reviews-grid { grid-template-columns:1fr; } .rv-home .hero h1 { font-size:1.85rem; } .rv-home .hero-stats { gap:20px; } .rv-home .plan-price { font-size:2.5rem; } .rv-home .plan-card.featured .plan-price { font-size:2.8rem; } }
 `;
 
-function ComparisonSlider({ img, label }: { img: string; label: string }) {
-  const [pct, setPct] = useState(50);
-  const ref = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-
-  const calc = (clientX: number) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    setPct(Math.min(Math.max(Math.round(((clientX - rect.left) / rect.width) * 100), 0), 100));
-  };
-
+function ComparisonCard({ img, label }: { img: string; label: string }) {
   return (
     <div className="cmp-card">
       <div className="cmp-ba-labels"><span>Before</span><span>After</span></div>
-      <div
-        className="cmp-wrap"
-        ref={ref}
-        onMouseDown={(event) => { dragging.current = true; calc(event.clientX); event.preventDefault(); }}
-        onMouseMove={(event) => { if (dragging.current) calc(event.clientX); }}
-        onMouseUp={() => { dragging.current = false; }}
-        onMouseLeave={() => { dragging.current = false; }}
-        onTouchStart={(event) => calc(event.touches[0].clientX)}
-        onTouchMove={(event) => { event.preventDefault(); calc(event.touches[0].clientX); }}
-      >
-        <div className="cmp-under"><img src={img} alt={`Before result for ${label}`} /></div>
-        <div className="cmp-over" style={{ clipPath: `inset(0 0 0 ${pct}%)` }}>
-          <img src={img} alt={`After result for ${label}`} />
-        </div>
-        <div className="cmp-line" style={{ left: `${pct}%` }}>
-          <div className="cmp-knob">
-            <svg viewBox="0 0 20 20" fill="none">
-              <path d="M7 4L2 10L7 16M13 4L18 10L13 16" stroke="#e91e8c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        </div>
+      <div className="cmp-wrap">
+        <img src={img} alt={`Before and after face yoga result for ${label}`} />
       </div>
       <div className="cmp-label">{label}</div>
     </div>
@@ -383,10 +350,10 @@ export function LandingPage() {
             ))}
           </div>
           <div className="nav-right">
-            <Link href="/login" className="nav-login">Login</Link>
-            <button className="nav-icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle dark mode">
+            {/* <Link href="/login" className="nav-login">Login</Link> */}
+            {/* <button className="nav-icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle dark mode">
               {dark ? "Sun" : "Moon"}
-            </button>
+            </button> */}
             <button className="hamburger" onClick={() => setMenu(!menu)} aria-label="Menu">
               {menu ? "X" : "Menu"}
             </button>
@@ -411,11 +378,11 @@ export function LandingPage() {
                 Unlock your skin&apos;s true potential. Our personalized face yoga routines help you reduce wrinkles, tone your jawline, and achieve a radiant glow all naturally, in just minutes a day.
               </p>
               <Link href="/quiz" className="btn-pink">Take a Free Quiz</Link>
-              <div className="hero-stats">
+              {/* <div className="hero-stats">
                 <div><div className="stat-num">10K+</div><div className="stat-lbl">Happy Users</div></div>
                 <div><div className="stat-num">57</div><div className="stat-lbl">Face Muscles</div></div>
                 <div><div className="stat-num">15 min</div><div className="stat-lbl">Per Day</div></div>
-              </div>
+              </div> */}
             </div>
             <div className="hero-img">
               <img src={IMGS.hero} alt="Woman practicing natural Face Yoga" />
@@ -425,24 +392,12 @@ export function LandingPage() {
 
         <section id="how-it-works" className="sec sec-alt">
           <div className="inner">
-            <div className="about-grid">
-              <div className="about-text">
-                <span className="sec-eyebrow">100% Natural</span>
-                <h2>Your Personalized Routine: The Natural Alternative</h2>
-                <p>
-                  Skip the expensive creams and invasive procedures. Roop Veda&apos;s Face Yoga offers a safe, natural way to lift and firm your skin. By exercising the 57 muscles in your face and neck, you can reverse signs of aging, boost collagen, and sculpt your features in just 10 to 15 minutes a day.
-                </p>
-                <Link href="/quiz" className="btn-outline">Take a Free Quiz</Link>
-              </div>
-              <div className="benefits-2x2">
-                {BENEFITS.map((benefit) => (
-                  <div className="bcard" key={benefit.title}>
-                    <div className="bcard-icon">{benefit.icon}</div>
-                    <h3>{benefit.title}</h3>
-                    <p>{benefit.desc}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="pkg-box" style={{ textAlign: "center" }}>
+              <h2 className="pkg-box-title">Your Personalized Routine: The 100% Natural Alternative</h2>
+              <p style={{ maxWidth: 800, margin: "0 auto 30px" }}>
+                Skip the expensive creams and invasive procedures! Roop Veda&apos;s Face Yoga offers a safe, natural way to lift and firm your skin. By exercising the 57 muscles in your face and neck, you can reverse signs of aging, boost collagen, and sculpt your features in just 10-15 minutes a day from the comfort of your home.
+              </p>
+              <Link href="/quiz" className="btn-pink">Take a Free Quiz</Link>
             </div>
           </div>
         </section>
@@ -456,7 +411,7 @@ export function LandingPage() {
             </div>
             <div className="cmp-grid">
               {COMPARISONS.map((comparison) => (
-                <ComparisonSlider key={comparison.label} img={comparison.img} label={comparison.label} />
+                <ComparisonCard key={comparison.label} img={comparison.img} label={comparison.label} />
               ))}
             </div>
           </div>

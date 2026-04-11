@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   QUIZ_ANSWERS_STORAGE_KEY,
   readAttribution,
@@ -16,6 +14,242 @@ import {
   trackServerMetaEvent
 } from "@/lib/meta/browser";
 import TopBar from "./top-bar";
+
+const StarRating = () => (
+  <svg
+    width="100"
+    height="19"
+    viewBox="0 0 6248 1172"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-label="4.5 out of 5 stars"
+  >
+    {[0, 1269, 2538, 3807].map((x, i) => (
+      <g key={i}>
+        <rect x={x} width={1171} height={1172} fill="#f57f96" />
+        <polygon
+          points={`${x + 585},229 ${x + 681},492 ${x + 961},501 ${x + 740},673 ${x + 817},942 ${x + 585},785 ${x + 353},942 ${x + 431},673 ${x + 210},501 ${x + 490},492`}
+          fill="white"
+        />
+      </g>
+    ))}
+    <rect x={5076} width={1172} height={1172} fill="#ffd9df" />
+    <rect x={5076} width={586} height={1172} fill="#f57f96" />
+    <polygon
+      points="5662,229 5757,492 6037,501 5816,673 5894,942 5662,785 5430,942 5508,673 5286,501 5566,492"
+      fill="white"
+    />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2m-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2m3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1z" />
+  </svg>
+);
+
+const emailCaptureStyles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "linear-gradient(135deg, #fff2f4 0%, #ffc3cc 52%, #ffdde2 100%)",
+    padding: "24px 16px",
+    fontFamily: "'Georgia', 'Times New Roman', serif"
+  },
+  card: {
+    background: "#ffffff",
+    borderRadius: "20px",
+    boxShadow:
+      "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 60px -10px rgba(245,127,150,0.22)",
+    maxWidth: "540px",
+    width: "100%",
+    padding: "36px 32px 28px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "0px"
+  },
+  header: { marginBottom: "20px" },
+  logoRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: "12px"
+  },
+  logoText: {
+    fontSize: "28px",
+    fontWeight: 800,
+    letterSpacing: "-0.5px",
+    color: "#111827",
+    fontFamily: "'Georgia', serif"
+  },
+  logoAccent: { color: "#f57f96" },
+  logoReg: { fontSize: "12px", color: "#6b7280", verticalAlign: "super" },
+  ratingRow: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: "4px"
+  },
+  excellentText: {
+    fontSize: "12px",
+    fontWeight: 700,
+    color: "#111827",
+    fontFamily: "sans-serif",
+    letterSpacing: "0.5px",
+    textTransform: "uppercase"
+  },
+  divider: {
+    height: "1px",
+    background: "linear-gradient(to right, transparent, #e5e7eb, transparent)",
+    margin: "0 0 24px"
+  },
+  heroSection: {
+    textAlign: "center",
+    marginBottom: "28px"
+  },
+  badge: {
+    display: "inline-block",
+    background: "#ffe7eb",
+    color: "#cc4b68",
+    fontSize: "13px",
+    fontWeight: 600,
+    padding: "5px 14px",
+    borderRadius: "999px",
+    border: "1px solid #ffc3cc",
+    marginBottom: "14px",
+    fontFamily: "sans-serif",
+    letterSpacing: "0.3px"
+  },
+  heading: {
+    fontSize: "clamp(26px, 5vw, 34px)",
+    fontWeight: 800,
+    color: "#111827",
+    lineHeight: 1.2,
+    margin: "0 0 10px",
+    letterSpacing: "-0.5px"
+  },
+  headingAccent: { color: "#e85d7f" },
+  subheading: {
+    fontSize: "16px",
+    color: "#4b5563",
+    margin: 0,
+    fontFamily: "sans-serif",
+    lineHeight: 1.5
+  },
+  strong: { color: "#111827" },
+  formWrapper: { marginBottom: "16px" },
+  form: { width: "100%" },
+  inputRow: {
+    display: "flex",
+    gap: "10px",
+    alignItems: "flex-end",
+    flexWrap: "wrap"
+  },
+  inputWrapper: {
+    flex: "1 1 200px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px"
+  },
+  label: {
+    fontSize: "13px",
+    fontWeight: 600,
+    color: "#374151",
+    fontFamily: "sans-serif"
+  },
+  input: {
+    width: "100%",
+    padding: "12px 14px",
+    border: "1.5px solid #d1d5db",
+    borderRadius: "10px",
+    fontSize: "15px",
+    color: "#111827",
+    fontFamily: "sans-serif",
+    outline: "none",
+    boxSizing: "border-box"
+  },
+  inputError: { borderColor: "#ef4444" },
+  errorText: {
+    fontSize: "12px",
+    color: "#ef4444",
+    margin: "2px 0 0",
+    fontFamily: "sans-serif"
+  },
+  button: {
+    flex: "0 0 auto",
+    padding: "12px 20px",
+    background: "linear-gradient(135deg, #ff8fa3 0%, #e85d7f 100%)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "10px",
+    fontSize: "15px",
+    fontWeight: 700,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    fontFamily: "sans-serif",
+    boxShadow: "0 4px 14px rgba(232,93,127,0.35)"
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+    cursor: "not-allowed"
+  },
+  trustBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: "10px",
+    padding: "12px 0",
+    borderTop: "1px solid #f3f4f6",
+    borderBottom: "1px solid #f3f4f6",
+    marginBottom: "16px"
+  },
+  trustLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px"
+  },
+  lockColor: { color: "#e85d7f", display: "flex", alignItems: "center" },
+  trustText: {
+    fontSize: "12px",
+    color: "#6b7280",
+    fontFamily: "sans-serif"
+  },
+  trustLogos: {
+    display: "flex",
+    gap: "12px",
+    alignItems: "center"
+  },
+  trustBadge: {
+    fontSize: "11px",
+    fontWeight: 700,
+    color: "#374151",
+    fontFamily: "sans-serif",
+    letterSpacing: "0.5px",
+    textTransform: "uppercase"
+  },
+  legal: {
+    fontSize: "11.5px",
+    color: "#9ca3af",
+    lineHeight: 1.6,
+    margin: 0,
+    fontFamily: "sans-serif",
+    textAlign: "center"
+  },
+  legalLink: {
+    color: "#374151",
+    fontWeight: 700,
+    textDecoration: "underline"
+  }
+};
 
 // const QUESTIONS = [
 //   {
@@ -937,6 +1171,114 @@ export function QuizFlow() {
 
     const q = QUESTIONS[step];
 
+    if (showEmailCapture) {
+      return (
+        <main style={emailCaptureStyles.page}>
+          <div style={emailCaptureStyles.card}>
+            <div style={emailCaptureStyles.header}>
+              <div style={emailCaptureStyles.logoRow}>
+                <span style={emailCaptureStyles.logoText}>
+                  face<span style={emailCaptureStyles.logoAccent}>yoga</span>
+                  <sup style={emailCaptureStyles.logoReg}>®</sup>
+                </span>
+                <div style={emailCaptureStyles.ratingRow}>
+                  <span style={emailCaptureStyles.excellentText}>Excellent</span>
+                  <StarRating />
+                </div>
+              </div>
+            </div>
+
+            <div style={emailCaptureStyles.divider} />
+
+            <div style={emailCaptureStyles.heroSection}>
+              <div style={emailCaptureStyles.badge}>✅ Analysis Complete</div>
+              <h2 style={emailCaptureStyles.heading}>
+                Your Personal Plan
+                <br />
+                <span style={emailCaptureStyles.headingAccent}>Is Ready</span>
+              </h2>
+              <p style={emailCaptureStyles.subheading}>
+                You Could Look{" "}
+                <strong style={emailCaptureStyles.strong}>Years Younger</strong>{" "}
+                If You Start Today
+              </p>
+            </div>
+
+            <div style={emailCaptureStyles.formWrapper}>
+              <form onSubmit={handleLeadSubmit} noValidate style={emailCaptureStyles.form}>
+                <div style={emailCaptureStyles.inputRow}>
+                  <div style={emailCaptureStyles.inputWrapper}>
+                    <label htmlFor="promo-email" style={emailCaptureStyles.label}>
+                      Email Address
+                    </label>
+                    <input
+                      id="promo-email"
+                      type="email"
+                      required
+                      name="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      placeholder="you@example.com"
+                      style={{
+                        ...emailCaptureStyles.input,
+                        ...(error ? emailCaptureStyles.inputError : {})
+                      }}
+                      aria-describedby={error ? "email-error" : undefined}
+                      aria-invalid={!!error}
+                      autoComplete="email"
+                    />
+                    {error ? (
+                      <p id="email-error" style={emailCaptureStyles.errorText} role="alert">
+                        {error}
+                      </p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    style={{
+                      ...emailCaptureStyles.button,
+                      ...(submitting ? emailCaptureStyles.buttonDisabled : {})
+                    }}
+                  >
+                    {submitting ? "Saving..." : "Get my plan \uD83D\uDC49"}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div style={emailCaptureStyles.trustBar}>
+              <div style={emailCaptureStyles.trustLeft}>
+                <span style={emailCaptureStyles.lockColor}>
+                  <LockIcon />
+                </span>
+                <span style={emailCaptureStyles.trustText}>
+                  Your information is secure with us
+                </span>
+              </div>
+              <div style={emailCaptureStyles.trustLogos}>
+                <span style={emailCaptureStyles.trustBadge}>🛡️ Norton</span>
+                <span style={emailCaptureStyles.trustBadge}>🔒 McAfee</span>
+              </div>
+            </div>
+
+            <p style={emailCaptureStyles.legal}>
+              By clicking you agree to our{" "}
+              <a href="/privacy" target="_blank" rel="noreferrer" style={emailCaptureStyles.legalLink}>
+                Privacy Policy
+              </a>
+              . We respect your privacy. We will never sell, rent, or share your
+              email address. That is more than a policy; it is our personal
+              guarantee!
+            </p>
+          </div>
+        </main>
+      );
+    }
+
     return (
       <main className="min-h-screen flex flex-col items-center justify-center px-2 py-4" style={{ backgroundColor: "#fceef0" }}>
         {/* Header with Logo and Rating */}
@@ -958,30 +1300,7 @@ export function QuizFlow() {
               </div>
             </div>
 
-            {showEmailCapture ? (
-              <div className="space-y-8 w-full">
-                <h2 className="text-3xl sm:text-4xl font-bold text-forest text-center">You're almost there!</h2>
-                <p className="text-center text-forest/70 text-lg">Enter your email to get your personalized plan</p>
-                <form onSubmit={handleLeadSubmit} className="space-y-4">
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full p-4 border-2 border-mist rounded-xl focus:outline-none focus:border-ember text-lg"
-                  />
-                  {error && <p className="text-sm text-red-600">{error}</p>}
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full p-4 rounded-xl bg-forest text-white font-bold text-lg hover:bg-ember transition-all disabled:opacity-50"
-                  >
-                    {submitting ? "Saving..." : "Continue to Plans"}
-                  </button>
-                </form>
-              </div>
-            ) : q.type === "info" ? (
+            {q.type === "info" ? (
               <InfoStep q={q} onContinue={() => advance(true)} />
             ) : q.type === "gender" ? (
               <GenderStep onSelect={advance} subAnswer={subAnswer} setSubAnswer={setSubAnswer} />
