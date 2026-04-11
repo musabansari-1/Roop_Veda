@@ -15,6 +15,7 @@ import {
   trackBrowserMetaEvent,
   trackServerMetaEvent
 } from "@/lib/meta/browser";
+import TopBar from "./top-bar";
 
 const QUESTIONS = [
   {
@@ -401,8 +402,12 @@ function GenderStep({ onSelect, subAnswer, setSubAnswer }: {
   setSubAnswer: (val: string | null) => void;
 }) {
   const q = QUESTIONS[0] as any;
+  const [selected, setSelected] = useState<string | null>(null);
   const handleGender = (val: string) => {
-    setTimeout(() => onSelect(val), 300);
+    if (!selected) {
+      setSelected(val);
+      setTimeout(() => onSelect(val), 300);
+    }
   };
   return (
     <div className="space-y-6">
@@ -411,11 +416,17 @@ function GenderStep({ onSelect, subAnswer, setSubAnswer }: {
         {q.options && q.options.map((opt: any) => (
           <button
             key={opt.value}
-            className={`rounded-2xl border-2 p-3 text-center transition-all border-mist hover:border-ember/40 bg-white`}
+            className={`rounded-2xl border-2 p-3 text-center transition-all bg-white ${
+              selected === opt.value
+                ? "border-ember bg-sand/20 shadow-lg"
+                : "border-mist hover:border-ember/40"
+            }`}
             onClick={() => handleGender(opt.value)}
+            disabled={!!selected}
           >
             <img src={opt.img} alt={opt.label} className="w-full h-40 object-cover rounded-lg mb-2" />
             <p className="font-semibold text-forest">{opt.label}</p>
+            {selected === opt.value && <span className="block text-ember font-bold mt-2">✓</span>}
           </button>
         ))}
       </div>
@@ -434,9 +445,9 @@ function SingleStep({ q, onSelect }: {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <h2 className="text-3xl font-semibold text-forest text-center">{q.question}</h2>
-      <div className="space-y-3">
+      <div className={`grid gap-3 ${q.options.length > 4 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
         {q.options.map((o: any) => (
           <button
             key={o.label}
@@ -467,12 +478,12 @@ function MultiStep({ q, onNext }: {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div>
         <h2 className="text-3xl font-semibold text-forest text-center">{q.question}</h2>
         {q.subLabel && <p className="text-center text-sm text-forest/60 mt-2">{q.subLabel}</p>}
       </div>
-      <div className="space-y-3">
+      <div className={`grid gap-3 ${q.options.length > 4 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
         {q.options.map((o: any) => (
           <button
             key={o.label}
@@ -633,154 +644,157 @@ export function QuizFlow() {
     });
   }, []);
 
-  const progress = Math.round((step / TOTAL_STEPS) * 100);
+    const progress = Math.round((step / TOTAL_STEPS) * 100);
 
-  const advance = (val: any) => {
-    const newAnswers = { ...answers, [step]: val };
-    setAnswers(newAnswers);
-    window.localStorage.setItem(
-      QUIZ_ANSWERS_STORAGE_KEY,
-      JSON.stringify(newAnswers)
-    );
-    
-    if (step + 1 >= TOTAL_STEPS) {
-      setShowEmailCapture(true);
-    } else {
-      setStep(s => s + 1);
-    }
-  };
-
-  async function handleLeadSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitting(true);
-    setError(null);
-
-    const eventId = createEventId();
-    const attribution = readAttribution();
-    const eventSourceUrl = window.location.href;
-
-    trackBrowserMetaEvent("Lead", eventId, {
-      content_name: "quiz_email_capture"
-    });
-
-    try {
-      const stringifiedAnswers: Record<string, string> = {};
-      for (const [key, value] of Object.entries(answers)) {
-        stringifiedAnswers[key] = Array.isArray(value) ? value.join(", ") : String(value);
+    const advance = (val: any) => {
+      const newAnswers = { ...answers, [step]: val };
+      setAnswers(newAnswers);
+      window.localStorage.setItem(
+        QUIZ_ANSWERS_STORAGE_KEY,
+        JSON.stringify(newAnswers)
+      );
+      
+      if (step + 1 >= TOTAL_STEPS) {
+        setShowEmailCapture(true);
+      } else {
+        setStep(s => s + 1);
       }
+    };
 
-      const response = await fetch("/api/lead", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          quizAnswers: stringifiedAnswers,
-          eventId,
-          eventSourceUrl,
-          attribution
-        })
+    async function handleLeadSubmit(event: React.FormEvent<HTMLFormElement>) {
+      event.preventDefault();
+      setSubmitting(true);
+      setError(null);
+
+      const eventId = createEventId();
+      const attribution = readAttribution();
+      const eventSourceUrl = window.location.href;
+
+      trackBrowserMetaEvent("Lead", eventId, {
+        content_name: "quiz_email_capture"
       });
-
-      let data: { error?: string; leadId?: string } = {};
 
       try {
-        data = (await response.json()) as { error?: string; leadId?: string };
-      } catch (parseError) {
-        console.error("[quiz] Failed to parse lead response", parseError);
+        const stringifiedAnswers: Record<string, string> = {};
+        for (const [key, value] of Object.entries(answers)) {
+          stringifiedAnswers[key] = Array.isArray(value) ? value.join(", ") : String(value);
+        }
+
+        const response = await fetch("/api/lead", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email,
+            quizAnswers: stringifiedAnswers,
+            eventId,
+            eventSourceUrl,
+            attribution
+          })
+        });
+
+        let data: { error?: string; leadId?: string } = {};
+
+        try {
+          data = (await response.json()) as { error?: string; leadId?: string };
+        } catch (parseError) {
+          console.error("[quiz] Failed to parse lead response", parseError);
+        }
+
+        if (!response.ok || !data.leadId) {
+          throw new Error(data.error ?? "Failed to save your lead.");
+        }
+
+        setActiveLead({
+          leadId: data.leadId,
+          email
+        });
+
+        router.push(`/plans?leadId=${data.leadId}`);
+      } catch (submissionError) {
+        setError(
+          submissionError instanceof Error
+            ? submissionError.message
+            : "We couldn't save your details. Please try again."
+        );
+      } finally {
+        setSubmitting(false);
       }
-
-      if (!response.ok || !data.leadId) {
-        throw new Error(data.error ?? "Failed to save your lead.");
-      }
-
-      setActiveLead({
-        leadId: data.leadId,
-        email
-      });
-
-      router.push(`/plans?leadId=${data.leadId}`);
-    } catch (submissionError) {
-      setError(
-        submissionError instanceof Error
-          ? submissionError.message
-          : "We couldn't save your details. Please try again."
-      );
-    } finally {
-      setSubmitting(false);
     }
-  }
 
-  const q = QUESTIONS[step];
+    const q = QUESTIONS[step];
 
-  return (
-    <main className="min-h-screen bg-mist/30 px-4 py-8">
-      <div className="mx-auto max-w-2xl">
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="h-2 rounded-full bg-mist overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-forest to-ember transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="mt-2 flex justify-between text-sm text-forest/60">
-            <span>Step {step + 1} of {TOTAL_STEPS}</span>
-            <span className="font-semibold">{progress}%</span>
-          </div>
-        </div>
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center px-2 py-4" style={{ backgroundColor: "#fceef0" }}>
+        {/* Header with Logo and Rating */}
+      <TopBar/>
 
-        {/* Content */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-12 mb-8">
-          {showEmailCapture ? (
-            <div className="space-y-6">
-              <h2 className="text-3xl font-semibold text-forest text-center">You're almost there!</h2>
-              <p className="text-center text-forest/70">Enter your email to get your personalized plan</p>
-              <form onSubmit={handleLeadSubmit} className="space-y-4">
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="w-full p-3 border-2 border-mist rounded-lg focus:outline-none focus:border-ember"
+        {/* Main Quiz Card - Wider */}
+        <div className="w-full max-w-4xl mb-8">
+          <div className="bg-white rounded-[32px] shadow-glow p-6 sm:p-10 lg:p-12 flex flex-col gap-6 border border-white/80">
+            {/* Progress Bar Inside Card at Top */}
+            <div className="w-full">
+              <div className="h-1.5 rounded-full bg-mist overflow-hidden shadow-sm">
+                <div
+                  className="h-full bg-gradient-to-r from-forest to-ember transition-all duration-500"
+                  style={{ width: `${progress}%` }}
                 />
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full p-3 rounded-lg bg-forest text-white font-semibold hover:bg-forest/90 disabled:opacity-50"
-                >
-                  {submitting ? "Saving..." : "Continue to Plans"}
-                </button>
-              </form>
+              </div>
+              <div className="mt-2 text-center text-sm text-forest/60">
+                <span className="font-semibold">{progress}%</span>
+              </div>
             </div>
-          ) : q.type === "info" ? (
-            <InfoStep q={q} onContinue={() => advance(true)} />
-          ) : q.type === "gender" ? (
-            <GenderStep onSelect={advance} subAnswer={subAnswer} setSubAnswer={setSubAnswer} />
-          ) : q.type === "multi" ? (
-            <MultiStep key={step} q={q} onNext={advance} />
-          ) : q.type === "text" ? (
-            <TextStep key={step} q={q} onSelect={advance} />
-          ) : q.type === "number" ? (
-            <NumberStep key={step} q={q} onSelect={advance} />
-          ) : (
-            <SingleStep key={step} q={q} onSelect={advance} />
-          )}
+
+            {showEmailCapture ? (
+              <div className="space-y-8 w-full">
+                <h2 className="text-3xl sm:text-4xl font-bold text-forest text-center">You're almost there!</h2>
+                <p className="text-center text-forest/70 text-lg">Enter your email to get your personalized plan</p>
+                <form onSubmit={handleLeadSubmit} className="space-y-4">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full p-4 border-2 border-mist rounded-xl focus:outline-none focus:border-ember text-lg"
+                  />
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full p-4 rounded-xl bg-forest text-white font-bold text-lg hover:bg-ember transition-all disabled:opacity-50"
+                  >
+                    {submitting ? "Saving..." : "Continue to Plans"}
+                  </button>
+                </form>
+              </div>
+            ) : q.type === "info" ? (
+              <InfoStep q={q} onContinue={() => advance(true)} />
+            ) : q.type === "gender" ? (
+              <GenderStep onSelect={advance} subAnswer={subAnswer} setSubAnswer={setSubAnswer} />
+            ) : q.type === "multi" ? (
+              <MultiStep key={step} q={q} onNext={advance} />
+            ) : q.type === "text" ? (
+              <TextStep key={step} q={q} onSelect={advance} />
+            ) : q.type === "number" ? (
+              <NumberStep key={step} q={q} onSelect={advance} />
+            ) : (
+              <SingleStep key={step} q={q} onSelect={advance} />
+            )}
+          </div>
+          {/* As Seen On and Security Badges (removed stray alt links below) */}
         </div>
 
         {/* Back button */}
         {step > 0 && !showEmailCapture && (
           <button
             onClick={() => setStep(s => s - 1)}
-            className="text-forest/70 hover:text-forest font-medium"
+            className="text-forest/70 hover:text-forest font-medium text-lg mt-2"
           >
-            ← Back
+            {''} Back
           </button>
         )}
-      </div>
-    </main>
+      </main>
   );
 }
