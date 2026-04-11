@@ -17,101 +17,394 @@ import {
 } from "@/lib/meta/browser";
 import TopBar from "./top-bar";
 
+// const QUESTIONS = [
+//   {
+//     id: 0,
+//     question: "Would you like to eliminate wrinkles, hooded eyelids, neck lines & look 10 years younger?",
+//     type: "gender",
+//     options: [
+//       { label: "👨 Male",   value: "male",   img: "https://cdn.hoola.com/faceyoga-cms/1765369700175_1760430171864_thumbnail_man_c6dc188129.webp" },
+//       { label: "👩 Female", value: "female", img: "https://cdn.hoola.com/faceyoga-cms/1765369692185_1760430181414_thumbnail_woman_288a247836.webp" },
+//     ],
+//   // Removed subquestion
+//   },
+//   {
+//     id: 1,
+//     question: "What is your age?",
+//     type: "single",
+//     options: [
+//       { emoji: "🌱", label: "18-24" },
+//       { emoji: "✨", label: "25-34" },
+//       { emoji: "🌸", label: "35-44" },
+//       { emoji: "🌺", label: "45-54" },
+//       { emoji: "🌻", label: "55-64" },
+//       { emoji: "🍀", label: "65+" },
+//     ],
+//   },
+//   {
+//     id: 2,
+//     question: "Which areas concern you the most?",
+//     type: "multi",
+//     options: [
+//       { emoji: "👁️",  label: "Hooded / droopy eyelids" },
+//       { emoji: "😮",  label: "Sagging cheeks & jowls" },
+//       { emoji: "💋",  label: "Lip lines & thinning lips" },
+//       { emoji: "😤",  label: "Double chin & neck lines" },
+//       { emoji: "😑",  label: "Forehead wrinkles" },
+//       { emoji: "🙁",  label: "Nasolabial folds (smile lines)" },
+//     ],
+//   },
+//   {
+//     id: 3,
+//     question: "How would you describe your current skin condition?",
+//     type: "single",
+//     options: [
+//       { emoji: "🌟", label: "Firm and elastic" },
+//       { emoji: "💧", label: "Slightly loose" },
+//       { emoji: "😕", label: "Noticeably sagging" },
+//       { emoji: "😟", label: "Very loose and wrinkled" },
+//     ],
+//   },
+//   {
+//     id: 4,
+//     question: "Have you tried any face exercises or routines before?",
+//     type: "single",
+//     options: [
+//       { emoji: "✅", label: "Yes, regularly" },
+//       { emoji: "🔄", label: "A few times" },
+//       { emoji: "❌", label: "Never" },
+//     ],
+//   },
+//   {
+//     id: 5,
+//     question: "How much time can you dedicate daily to face yoga?",
+//     type: "single",
+//     options: [
+//       { emoji: "⏱️", label: "5 minutes" },
+//       { emoji: "🕐", label: "10 minutes" },
+//       { emoji: "🕕", label: "15-20 minutes" },
+//       { emoji: "🏆", label: "30+ minutes" },
+//     ],
+//   },
+//   {
+//     id: 6,
+//     question: "What is your primary goal with Face Yoga?",
+//     type: "single",
+//     options: [
+//       { emoji: "⏪", label: "Look younger" },
+//       { emoji: "💪", label: "Tone & firm facial muscles" },
+//       { emoji: "😌", label: "Reduce stress & relax" },
+//       { emoji: "✨", label: "Improve skin glow" },
+//       { emoji: "🎯", label: "All of the above" },
+//     ],
+//   },
+//   {
+//     id: 7,
+//     question: "How did you hear about Face Yoga?",
+//     type: "single",
+//     options: [
+//       { emoji: "📱", label: "Social media" },
+//       { emoji: "👭", label: "Friend or family" },
+//       { emoji: "📰", label: "Article or blog" },
+//       { emoji: "📺", label: "TV or podcast" },
+//       { emoji: "🔍", label: "Online search" },
+//     ],
+//   },
+//   {
+//     id: 8,
+//     question: "Have you heard about Face Yoga before?",
+//     type: "single",
+//     options: [
+//       { emoji: "🧘‍♂️", label: "Yes" },
+//       { emoji: "🤏", label: "I have heard a little bit" },
+//       { emoji: "🤔", label: "No" },
+//     ],
+//   },
+//   {
+//     id: 9,
+//     question: "Choose your skin type",
+//     type: "multi",
+//     options: [
+//       { emoji: "🧘‍♀️", label: "Normal" },
+//       { emoji: "🌵", label: "Dry" },
+//       { emoji: "⚡️", label: "Sensitive" },
+//       { emoji: "🥑", label: "Oily" },
+//       { emoji: "🤏", label: "Combination" },
+//       { emoji: "🤷‍♂️", label: "Not sure" },
+//     ],
+//   },
+//   {
+//     id: 10,
+//     question: "Do you have any of the following skin concerns?",
+//     type: "multi",
+//     subLabel: "Select all that apply",
+//     options: [
+//       { emoji: "🫣", label: "Acne" },
+//       { emoji: "🌵", label: "Dryness" },
+//       { emoji: "👤", label: "Neck lines" },
+//       { emoji: "🥹", label: "Hooded eyelids" },
+//       { emoji: "🗿", label: "Wrinkles" },
+//       { emoji: "🥑", label: "Oiliness" },
+//       { emoji: "⚫️", label: "Dark spots" },
+//       { emoji: "✅", label: "None of the above" },
+//     ],
+//   },
+//   {
+//     id: 11,
+//     question: "How would you describe your skin's sensitivity level?",
+//     type: "single",
+//     options: [
+//       { emoji: "⚡️", label: "Very sensitive" },
+//       { emoji: "🤏", label: "Moderately sensitive" },
+//       { emoji: "🔅", label: "Not sensitive" },
+//       { emoji: "🤷‍♂️", label: "Not sure" },
+//     ],
+//   },
+//   {
+//     id: 12,
+//     question: "Have you noticed any loss of elasticity or firmness in your skin?",
+//     type: "single",
+//     options: [
+//       { emoji: "👍", label: "Yes" },
+//       { emoji: "👎", label: "No" },
+//       { emoji: "🤷‍♂️", label: "Not sure" },
+//     ],
+//   },
+//   {
+//     id: 13,
+//     question: "Worried about results? Over 45,132 people improved their skin condition with Face Yoga",
+//     type: "info",
+//     beforeImg: "https://cdn.hoola.com/faceyoga-cms/1765283917895_female-before.3c8710dfe15b7faadfa5.webp",
+//     afterImg: "https://cdn.hoola.com/faceyoga-cms/1765283907568_female-after.b483bbc117cb9f38e0ec.webp",
+//     caption: "See how your face can change in just a few weeks!",
+//   },
+//   {
+//     id: 14,
+//     question: "How many hours do you sleep on average per night?",
+//     type: "single",
+//     options: [
+//       { emoji: "😴️", label: "Less than 6 hours" },
+//       { emoji: "💤", label: "6-8 hours" },
+//       { emoji: "🛌", label: "More than 8 hours" },
+//     ],
+//   },
+//   {
+//     id: 15,
+//     question: "How would you rate your daily stress level?",
+//     type: "single",
+//     options: [
+//       { emoji: "🌿", label: "Low" },
+//       { emoji: "⚖️", label: "Moderate" },
+//       { emoji: "💥", label: "High" },
+//     ],
+//   },
+//   {
+//     id: 16,
+//     question: "What is your daily water intake?",
+//     type: "single",
+//     options: [
+//       { emoji: "💧", label: "1-2 glasses a day" },
+//       { emoji: "🥤", label: "2-6 glasses a day" },
+//       { emoji: "🌊", label: "More than 6 glasses" },
+//     ],
+//   },
+//   {
+//     id: 17,
+//     question: "Do you smoke?",
+//     type: "single",
+//     options: [
+//       { emoji: "🚬", label: "Yes" },
+//       { emoji: "🚭", label: "No" },
+//     ],
+//   },
+//   {
+//     id: 18,
+//     question: "How often do you consume alcohol?",
+//     type: "single",
+//     options: [
+//       { emoji: "🍷", label: "Almost daily" },
+//       { emoji: "🍸", label: "A few times a week" },
+//       { emoji: "🥂", label: "A few times a month" },
+//       { emoji: "🙅", label: "Almost never" },
+//     ],
+//   },
+//   {
+//     id: 19,
+//     question: "How often do you exercise?",
+//     type: "single",
+//     options: [
+//       { emoji: "🚴‍♂️", label: "Daily" },
+//       { emoji: "🤸‍♂️", label: "A few times a week" },
+//       { emoji: "🗓", label: "Rarely" },
+//       { emoji: "🙅", label: "Almost never" },
+//     ],
+//   },
+//   {
+//     id: 20,
+//     question: "Do you use sunscreen regularly?",
+//     type: "single",
+//     options: [
+//       { emoji: "👍", label: "Yes" },
+//       { emoji: "👎", label: "No" },
+//     ],
+//   },
+//   {
+//     id: 21,
+//     question: "How often do you cleanse and moisturize your face?",
+//     type: "single",
+//     options: [
+//       { emoji: "👌", label: "More than once a day" },
+//       { emoji: "🤞", label: "Once a day" },
+//       { emoji: "✌️", label: "A few times a week" },
+//       { emoji: "🙅", label: "Never" },
+//     ],
+//   },
+//   {
+//     id: 22,
+//     question: "How often do you visit a cosmetologist?",
+//     type: "single",
+//     options: [
+//       { emoji: "👌", label: "Once per month or more" },
+//       { emoji: "✌️", label: "Once in several months" },
+//       { emoji: "🤞", label: "Once a year" },
+//       { emoji: "🙅", label: "Never" },
+//     ],
+//   },
+//   {
+//     id: 23,
+//     question: "How would you describe your diet?",
+//     type: "single",
+//     options: [
+//       { emoji: "⚖️", label: "Balanced" },
+//       { emoji: "🥦", label: "Vegetarian/Vegan" },
+//       { emoji: "🥫", label: "Inconsistent" },
+//       { emoji: "🍔", label: "High in processed foods" },
+//       { emoji: "🥩", label: "High-protein" },
+//       { emoji: "🍲", label: "Other" },
+//     ],
+//   },
+//   {
+//     id: 24,
+//     question: "Do you experience any recurring facial discomforts such as jaw clenching, teeth grinding, or frequent headaches?",
+//     type: "single",
+//     options: [
+//       { emoji: "👍", label: "Yes" },
+//       { emoji: "👎", label: "No" },
+//       { emoji: "🤷‍♂️", label: "Not sure" },
+//     ],
+//   },
+//   {
+//     id: 25,
+//     question: "How many hours per day do you spend in front of screens (computer, phone, tablet, etc.)?",
+//     type: "single",
+//     options: [
+//       { emoji: "🤏", label: "Less than 2 hours" },
+//       { emoji: "🕑", label: "2-5 hours" },
+//       { emoji: "🕓", label: "5-8 hours" },
+//       { emoji: "⏳", label: "More than 8 hours" },
+//     ],
+//   },
+//   {
+//     id: 26,
+//     question: "How often do you experience facial tension or discomfort?",
+//     type: "single",
+//     options: [
+//       { emoji: "😩", label: "Often" },
+//       { emoji: "😬", label: "Sometimes" },
+//       { emoji: "🙄", label: "Rarely" },
+//       { emoji: "🙅", label: "Never" },
+//     ],
+//   },
+//   {
+//     id: 27,
+//     question: "What is your name?",
+//     type: "text",
+//     placeholder: "First Name",
+//   },
+//   {
+//     id: 28,
+//     question: "What is your age?",
+//     type: "number",
+//     placeholder: "Age",
+//   },
+//   {
+//     id: 29,
+//     question: "You have great potential to crush your goals!",
+//     type: "info",
+//     beforeImg: "https://cdn.hoola.com/faceyoga-cms/1765283917895_female-before.3c8710dfe15b7faadfa5.webp",
+//     afterImg: "https://cdn.hoola.com/faceyoga-cms/1765283907568_female-after.b483bbc117cb9f38e0ec.webp",
+//     caption: "See how your face can change in just a few weeks!",
+//   },
+//   {
+//     id: 30,
+//     question: "How much time are you willing to dedicate to Face Yoga daily?",
+//     type: "single",
+//     options: [
+//       { emoji: "🤏", label: "Less than 5 minutes" },
+//       { emoji: "✌️", label: "5-10 minutes" },
+//       { emoji: "🙌", label: "More than 10 minutes" },
+//     ],
+//   },
+//   {
+//     id: 31,
+//     question: "What are your main goals for practicing face yoga?",
+//     type: "multi",
+//     subLabel: "Select all that apply",
+//     options: [
+//       { emoji: "👸", label: "Improve skin appearance" },
+//       { emoji: "🧏‍♀️", label: "Fix hooded eyelids" },
+//       { emoji: "👧", label: "Look younger" },
+//       { emoji: "👩", label: "Reduce wrinkles" },
+//       { emoji: "👱‍♀️", label: "Eliminate double-chin" },
+//       { emoji: "☝️", label: "All of the above" },
+//     ],
+//   },
+//   {
+//     id: 32,
+//     question: "Once you reach perfect skin with Face Yoga, how would you see yourself?",
+//     type: "single",
+//     options: [
+//       { emoji: "👍", label: "Being proud of myself" },
+//       { emoji: "🥰", label: "Feeling sexier" },
+//       { emoji: "👑", label: "More confident" },
+//       { emoji: "☝️", label: "All of the above" },
+//     ],
+//   },
+//   {
+//     id: 33,
+//     question: "After reaching your goal, how would you reward yourself?",
+//     type: "single",
+//     options: [
+//       { emoji: "👗", label: "Buying new clothes" },
+//       { emoji: "✈️", label: "Travelling somewhere new" },
+//       { emoji: "😎", label: "Taking a personal day" },
+//       { emoji: "📸", label: "Taking more pictures" },
+//       { emoji: "🥂", label: "Fun hang-out with friends" },
+//       { emoji: "🎁", label: "Other" },
+//     ],
+//   },
+//   {
+//     id: 34,
+//     question: "We predict you will enjoy skin that looks younger and has less facial fat in two weeks!",
+//     type: "info",
+//     beforeImg: "https://cdn.hoola.com/faceyoga-cms/1765283917895_female-before.3c8710dfe15b7faadfa5.webp",
+//     afterImg: "https://cdn.hoola.com/faceyoga-cms/1765283738603_female-after.b483bbc117cb9f38e0ec.webp",
+//     caption: "See how your face can change in just a few weeks!",
+//   },
+// ];
+
 const QUESTIONS = [
   {
     id: 0,
     question: "Would you like to eliminate wrinkles, hooded eyelids, neck lines & look 10 years younger?",
     type: "gender",
     options: [
-      { label: "👨 Male",   value: "male",   img: "https://cdn.hoola.com/faceyoga-cms/1765369700175_1760430171864_thumbnail_man_c6dc188129.webp" },
+      { label: "👨 Male", value: "male", img: "https://cdn.hoola.com/faceyoga-cms/1765369700175_1760430171864_thumbnail_man_c6dc188129.webp" },
       { label: "👩 Female", value: "female", img: "https://cdn.hoola.com/faceyoga-cms/1765369692185_1760430181414_thumbnail_woman_288a247836.webp" },
-    ],
-  // Removed subquestion
-  },
-  {
-    id: 1,
-    question: "What is your age?",
-    type: "single",
-    options: [
-      { emoji: "🌱", label: "18-24" },
-      { emoji: "✨", label: "25-34" },
-      { emoji: "🌸", label: "35-44" },
-      { emoji: "🌺", label: "45-54" },
-      { emoji: "🌻", label: "55-64" },
-      { emoji: "🍀", label: "65+" },
     ],
   },
   {
     id: 2,
-    question: "Which areas concern you the most?",
-    type: "multi",
-    options: [
-      { emoji: "👁️",  label: "Hooded / droopy eyelids" },
-      { emoji: "😮",  label: "Sagging cheeks & jowls" },
-      { emoji: "💋",  label: "Lip lines & thinning lips" },
-      { emoji: "😤",  label: "Double chin & neck lines" },
-      { emoji: "😑",  label: "Forehead wrinkles" },
-      { emoji: "🙁",  label: "Nasolabial folds (smile lines)" },
-    ],
-  },
-  {
-    id: 3,
-    question: "How would you describe your current skin condition?",
-    type: "single",
-    options: [
-      { emoji: "🌟", label: "Firm and elastic" },
-      { emoji: "💧", label: "Slightly loose" },
-      { emoji: "😕", label: "Noticeably sagging" },
-      { emoji: "😟", label: "Very loose and wrinkled" },
-    ],
-  },
-  {
-    id: 4,
-    question: "Have you tried any face exercises or routines before?",
-    type: "single",
-    options: [
-      { emoji: "✅", label: "Yes, regularly" },
-      { emoji: "🔄", label: "A few times" },
-      { emoji: "❌", label: "Never" },
-    ],
-  },
-  {
-    id: 5,
-    question: "How much time can you dedicate daily to face yoga?",
-    type: "single",
-    options: [
-      { emoji: "⏱️", label: "5 minutes" },
-      { emoji: "🕐", label: "10 minutes" },
-      { emoji: "🕕", label: "15-20 minutes" },
-      { emoji: "🏆", label: "30+ minutes" },
-    ],
-  },
-  {
-    id: 6,
-    question: "What is your primary goal with Face Yoga?",
-    type: "single",
-    options: [
-      { emoji: "⏪", label: "Look younger" },
-      { emoji: "💪", label: "Tone & firm facial muscles" },
-      { emoji: "😌", label: "Reduce stress & relax" },
-      { emoji: "✨", label: "Improve skin glow" },
-      { emoji: "🎯", label: "All of the above" },
-    ],
-  },
-  {
-    id: 7,
-    question: "How did you hear about Face Yoga?",
-    type: "single",
-    options: [
-      { emoji: "📱", label: "Social media" },
-      { emoji: "👭", label: "Friend or family" },
-      { emoji: "📰", label: "Article or blog" },
-      { emoji: "📺", label: "TV or podcast" },
-      { emoji: "🔍", label: "Online search" },
-    ],
-  },
-  {
-    id: 8,
     question: "Have you heard about Face Yoga before?",
     type: "single",
     options: [
@@ -121,7 +414,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 9,
+    id: 3,
     question: "Choose your skin type",
     type: "multi",
     options: [
@@ -134,7 +427,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 10,
+    id: 4,
     question: "Do you have any of the following skin concerns?",
     type: "multi",
     subLabel: "Select all that apply",
@@ -150,7 +443,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 11,
+    id: 5,
     question: "How would you describe your skin's sensitivity level?",
     type: "single",
     options: [
@@ -161,17 +454,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 12,
-    question: "Have you noticed any loss of elasticity or firmness in your skin?",
-    type: "single",
-    options: [
-      { emoji: "👍", label: "Yes" },
-      { emoji: "👎", label: "No" },
-      { emoji: "🤷‍♂️", label: "Not sure" },
-    ],
-  },
-  {
-    id: 13,
+    id: 6,
     question: "Worried about results? Over 45,132 people improved their skin condition with Face Yoga",
     type: "info",
     beforeImg: "https://cdn.hoola.com/faceyoga-cms/1765283917895_female-before.3c8710dfe15b7faadfa5.webp",
@@ -179,7 +462,7 @@ const QUESTIONS = [
     caption: "See how your face can change in just a few weeks!",
   },
   {
-    id: 14,
+    id: 7,
     question: "How many hours do you sleep on average per night?",
     type: "single",
     options: [
@@ -189,17 +472,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 15,
-    question: "How would you rate your daily stress level?",
-    type: "single",
-    options: [
-      { emoji: "🌿", label: "Low" },
-      { emoji: "⚖️", label: "Moderate" },
-      { emoji: "💥", label: "High" },
-    ],
-  },
-  {
-    id: 16,
+    id: 8,
     question: "What is your daily water intake?",
     type: "single",
     options: [
@@ -209,27 +482,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 17,
-    question: "Do you smoke?",
-    type: "single",
-    options: [
-      { emoji: "🚬", label: "Yes" },
-      { emoji: "🚭", label: "No" },
-    ],
-  },
-  {
-    id: 18,
-    question: "How often do you consume alcohol?",
-    type: "single",
-    options: [
-      { emoji: "🍷", label: "Almost daily" },
-      { emoji: "🍸", label: "A few times a week" },
-      { emoji: "🥂", label: "A few times a month" },
-      { emoji: "🙅", label: "Almost never" },
-    ],
-  },
-  {
-    id: 19,
+    id: 9,
     question: "How often do you exercise?",
     type: "single",
     options: [
@@ -240,16 +493,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 20,
-    question: "Do you use sunscreen regularly?",
-    type: "single",
-    options: [
-      { emoji: "👍", label: "Yes" },
-      { emoji: "👎", label: "No" },
-    ],
-  },
-  {
-    id: 21,
+    id: 10,
     question: "How often do you cleanse and moisturize your face?",
     type: "single",
     options: [
@@ -260,18 +504,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 22,
-    question: "How often do you visit a cosmetologist?",
-    type: "single",
-    options: [
-      { emoji: "👌", label: "Once per month or more" },
-      { emoji: "✌️", label: "Once in several months" },
-      { emoji: "🤞", label: "Once a year" },
-      { emoji: "🙅", label: "Never" },
-    ],
-  },
-  {
-    id: 23,
+    id: 11,
     question: "How would you describe your diet?",
     type: "single",
     options: [
@@ -284,17 +517,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 24,
-    question: "Do you experience any recurring facial discomforts such as jaw clenching, teeth grinding, or frequent headaches?",
-    type: "single",
-    options: [
-      { emoji: "👍", label: "Yes" },
-      { emoji: "👎", label: "No" },
-      { emoji: "🤷‍♂️", label: "Not sure" },
-    ],
-  },
-  {
-    id: 25,
+    id: 12,
     question: "How many hours per day do you spend in front of screens (computer, phone, tablet, etc.)?",
     type: "single",
     options: [
@@ -305,30 +528,19 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 26,
-    question: "How often do you experience facial tension or discomfort?",
-    type: "single",
-    options: [
-      { emoji: "😩", label: "Often" },
-      { emoji: "😬", label: "Sometimes" },
-      { emoji: "🙄", label: "Rarely" },
-      { emoji: "🙅", label: "Never" },
-    ],
-  },
-  {
-    id: 27,
+    id: 13,
     question: "What is your name?",
     type: "text",
     placeholder: "First Name",
   },
   {
-    id: 28,
+    id: 20,
     question: "What is your age?",
     type: "number",
     placeholder: "Age",
   },
   {
-    id: 29,
+    id: 14,
     question: "You have great potential to crush your goals!",
     type: "info",
     beforeImg: "https://cdn.hoola.com/faceyoga-cms/1765283917895_female-before.3c8710dfe15b7faadfa5.webp",
@@ -336,7 +548,7 @@ const QUESTIONS = [
     caption: "See how your face can change in just a few weeks!",
   },
   {
-    id: 30,
+    id: 15,
     question: "How much time are you willing to dedicate to Face Yoga daily?",
     type: "single",
     options: [
@@ -346,7 +558,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 31,
+    id: 16,
     question: "What are your main goals for practicing face yoga?",
     type: "multi",
     subLabel: "Select all that apply",
@@ -360,7 +572,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 32,
+    id: 17,
     question: "Once you reach perfect skin with Face Yoga, how would you see yourself?",
     type: "single",
     options: [
@@ -371,7 +583,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 33,
+    id: 18,
     question: "After reaching your goal, how would you reward yourself?",
     type: "single",
     options: [
@@ -384,7 +596,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 34,
+    id: 19,
     question: "We predict you will enjoy skin that looks younger and has less facial fat in two weeks!",
     type: "info",
     beforeImg: "https://cdn.hoola.com/faceyoga-cms/1765283917895_female-before.3c8710dfe15b7faadfa5.webp",
