@@ -25,14 +25,7 @@ const QUESTIONS = [
       { label: "👨 Male",   value: "male",   img: "https://cdn.hoola.com/faceyoga-cms/1765369700175_1760430171864_thumbnail_man_c6dc188129.webp" },
       { label: "👩 Female", value: "female", img: "https://cdn.hoola.com/faceyoga-cms/1765369692185_1760430181414_thumbnail_woman_288a247836.webp" },
     ],
-    sub: {
-      question: "Are you familiar with Face Yoga?",
-      options: [
-        { emoji: "🧘‍♂️", label: "Yes" },
-        { emoji: "🤏",   label: "I have heard a little bit" },
-        { emoji: "🤔",   label: "No" },
-      ],
-    },
+  // Removed subquestion
   },
   {
     id: 1,
@@ -407,18 +400,10 @@ function GenderStep({ onSelect, subAnswer, setSubAnswer }: {
   subAnswer: string | null;
   setSubAnswer: (val: string | null) => void;
 }) {
-  const [gender, setGender] = useState<string | null>(null);
   const q = QUESTIONS[0] as any;
-
   const handleGender = (val: string) => {
-    setGender(val);
-  };
-
-  const handleSub = (val: string) => {
-    setSubAnswer(val);
     setTimeout(() => onSelect(val), 300);
   };
-
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-semibold text-forest text-center">{q.question}</h2>
@@ -426,11 +411,7 @@ function GenderStep({ onSelect, subAnswer, setSubAnswer }: {
         {q.options && q.options.map((opt: any) => (
           <button
             key={opt.value}
-            className={`rounded-2xl border-2 p-3 text-center transition-all ${
-              gender === opt.value
-                ? "border-ember bg-sand/20 shadow-lg"
-                : "border-mist hover:border-ember/40 bg-white"
-            }`}
+            className={`rounded-2xl border-2 p-3 text-center transition-all border-mist hover:border-ember/40 bg-white`}
             onClick={() => handleGender(opt.value)}
           >
             <img src={opt.img} alt={opt.label} className="w-full h-40 object-cover rounded-lg mb-2" />
@@ -438,28 +419,6 @@ function GenderStep({ onSelect, subAnswer, setSubAnswer }: {
           </button>
         ))}
       </div>
-
-      {gender && (
-        <div className="bg-white border border-mist rounded-2xl p-6 space-y-4">
-          <p className="text-xl font-semibold text-forest text-center">{q.sub && q.sub.question}</p>
-          <div className="space-y-3">
-            {q.sub && q.sub.options && q.sub.options.map((o: any) => (
-              <button
-                key={o.label}
-                className={`w-full p-3 rounded-lg border-2 transition-all text-left flex items-center gap-3 ${
-                  subAnswer === o.label
-                    ? "border-ember bg-sand/20"
-                    : "border-mist hover:border-ember/40"
-                }`}
-                onClick={() => handleSub(o.label)}
-              >
-                <span className="text-2xl">{o.emoji}</span>
-                <span className="font-medium">{o.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
