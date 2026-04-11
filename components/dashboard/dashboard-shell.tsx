@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Check,
+  Disc3,
+  Lock,
   LogOut,
   Mail,
   PlayCircle,
@@ -175,43 +179,64 @@ export function DashboardShell({ userEmail }: DashboardShellProps) {
                   {videos.map((video, index) => {
                     const isActive = video.id === activeVideoId;
                     const isLoading = loadingVideoId === video.id;
+                    const isCompleted = activeVideoIndex > index;
+                    const isLocked = activeVideoIndex >= 0 && index > activeVideoIndex + 1;
+
+                    const statusIcon = isActive ? (
+                      <Disc3 className="h-4 w-4 animate-spin [animation-duration:3s]" />
+                    ) : isCompleted ? (
+                      <Check className="h-4 w-4" />
+                    ) : isLocked ? (
+                      <Lock className="h-4 w-4" />
+                    ) : (
+                      <Disc3 className="h-3.5 w-3.5" />
+                    );
 
                     return (
                       <button
                         key={video.id}
                         type="button"
-                        onClick={() => void handleSelectVideo(video)}
+                        onClick={() => {
+                          if (!isLocked) {
+                            void handleSelectVideo(video);
+                          }
+                        }}
+                        disabled={isLocked}
                         className={[
-                          "group inline-flex h-[180px] w-[70px] shrink-0 flex-col items-center justify-between rounded-[999px] border px-1 py-4 text-center transition duration-200",
+                          "group inline-flex h-[138px] w-[68px] shrink-0 flex-col items-center justify-between rounded-[999px] border px-1 py-3 text-center transition duration-200",
                           isActive
                             ? "border-forest bg-forest text-white shadow-[0_12px_32px_rgba(25,51,45,0.18)]"
-                            : "border-forest/10 bg-white text-forest hover:-translate-y-0.5 hover:border-ember/40 hover:bg-[#fff7ee]"
+                            : isLocked
+                              ? "border-forest/10 bg-[#f4eee5] text-forest/40"
+                              : "border-forest/10 bg-white text-forest hover:-translate-y-0.5 hover:border-ember/40 hover:bg-[#fff7ee]"
                         ].join(" ")}
                       >
-                        <span
-                          className={[
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-                            isActive ? "bg-white text-forest" : "bg-mist text-forest"
-                          ].join(" ")}
-                        >
+                        <span className="relative block h-10 w-10 overflow-hidden rounded-full ring-2 ring-white/70">
+                          <Image
+                            src="/session-thumb.svg"
+                            alt={`Session ${index + 1}`}
+                            fill
+                            sizes="40px"
+                            className={isLocked ? "object-cover opacity-60" : "object-cover"}
+                          />
+                        </span>
+                        <span className="text-[11px] font-semibold tracking-[0.16em]">
                           {String(index + 1).padStart(2, "0")}
                         </span>
-                        <span className="flex min-h-0 flex-1 items-center justify-center">
-                          <span
-                            className="line-clamp-4 text-xs font-semibold uppercase tracking-[0.16em]"
-                            style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-                          >
-                            {video.title}
-                          </span>
-                        </span>
-                        {/* <span
+                        <span
                           className={[
-                            "text-[10px]",
-                            isActive ? "text-white/75" : "text-forest/55"
+                            "flex h-5 w-5 items-center justify-center rounded-full",
+                            isActive
+                              ? "bg-white/15 text-white"
+                              : isCompleted
+                                ? "bg-[#eaf7ee] text-[#2f7d46]"
+                                : isLocked
+                                  ? "bg-white/70 text-forest/45"
+                                  : "bg-mist text-forest/70"
                           ].join(" ")}
                         >
-                          {isLoading ? "Open" : formatDuration(video.durationSeconds)}
-                        </span> */}
+                          {statusIcon}
+                        </span>
                       </button>
                     );
                   })}
