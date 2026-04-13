@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 
 const IMGS = {
   hero: "https://roopveda.co.in/Images/index-main-girl.png",
-  cmp1: "https://roopveda.co.in/Images/camparison1.png",
-  cmp2: "https://roopveda.co.in/Images/camparison2.png",
-  cmp3: "https://roopveda.co.in/Images/camparison3.png"
+  cmp1: "/Images/camparison1.png",
+  cmp2: "/Images/camparison2.png",
+  cmp3: "/Images/camparison3.png"
 };
 
 const NAV_LINKS = [

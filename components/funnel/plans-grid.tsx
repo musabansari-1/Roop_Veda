@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { getActiveLead, readAttribution } from "@/lib/meta/attribution";
 import { createEventId, trackBrowserMetaEvent } from "@/lib/meta/browser";
 import { pricingPlans } from "@/lib/stripe/plans";
@@ -77,85 +76,151 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#fff_0%,#fff6fb_100%)] px-4 py-8 text-[#2d1b35] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="surface px-6 py-8 sm:px-8">
-          <p className="eyebrow">Plans</p>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="font-display text-4xl text-forest">
-                Choose the best next step for your transformation.
+        <header className="rounded-[34px] border border-[#f8b4d4] bg-[linear-gradient(135deg,#fff_0%,#fff3f9_55%,#fde4f0_100%)] px-6 py-8 shadow-[0_24px_70px_rgba(233,30,140,0.1)] sm:px-10 sm:py-10">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="inline-flex rounded-full border border-[#f8b4d4] bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#e91e8c]">
+                Pricing
+              </p>
+              <h1 className="mt-5 font-display text-4xl leading-tight text-[#2d1b35] sm:text-5xl">
+                Choose the best next step for your transformation
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-forest/70">
+              <p className="mt-4 text-base leading-8 text-[#5a4a6a] sm:text-lg">
                 {email
-                  ? `Your quiz recommendations are saved for ${email}.`
+                  ? `Your quiz recommendations are saved for ${email}. Pick the plan that feels right for your glow journey.`
                   : "Your plan recommendations are ready. Select the offer that fits your momentum best."}
               </p>
-              <p className="mt-2 text-xs uppercase tracking-[0.2em] text-ember/80">
-                Local development can continue without Stripe when bypass checkout is enabled.
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#c4177a]/80">
+                Secure checkout powered by your existing payment flow
               </p>
             </div>
+
             {!leadId ? (
               <Link
                 href="/quiz"
-                className="text-sm font-semibold text-forest underline underline-offset-4"
+                className="inline-flex items-center justify-center rounded-full border border-[#e91e8c] px-5 py-3 text-sm font-semibold text-[#e91e8c] transition hover:bg-[#e91e8c] hover:text-white"
               >
                 Complete the quiz first
               </Link>
             ) : null}
           </div>
-          {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
-        </div>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          {pricingPlans.map((plan) => (
-            <section
-              key={plan.id}
-              className={`surface flex flex-col px-6 py-7 ${
-                plan.highlight ? "border-ember/25 ring-2 ring-ember/10" : ""
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-ember">
+          {error ? (
+            <div className="mt-6 rounded-[20px] border border-[#f3a8c9] bg-[#fff5fa] px-5 py-4 text-sm text-[#a02b67]">
+              {error}
+            </div>
+          ) : null}
+        </header>
+
+        <section className="mt-8 rounded-[30px] border border-[#f8b4d4] bg-white px-6 py-8 shadow-[0_18px_50px_rgba(233,30,140,0.08)] sm:px-10">
+          <h2 className="text-center text-2xl font-semibold text-[#2d1b35]">
+            Your Personalized Package Includes
+          </h2>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {[
+              "Customized daily facial workout plan",
+              "Premium library of anti-aging face yoga routines",
+              "Expert glow-focused guidance",
+              "Simple dashboard access after purchase",
+              "Step-by-step video support",
+              "Designed for natural, consistent progress"
+            ].map((item) => (
+              <div
+                key={item}
+                className="flex items-center gap-3 rounded-[18px] border border-[#f8b4d4] bg-[#fff7fb] px-4 py-4 text-sm font-medium text-[#5a4a6a]"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#10b981] text-xs font-bold text-white">
+                  ✓
+                </span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          {pricingPlans.map((plan) => {
+            const isFeatured = Boolean(plan.highlight);
+            const isPending = pendingPlanId === plan.id;
+
+            return (
+              <section
+                key={plan.id}
+                className={`relative overflow-hidden rounded-[30px] border transition-all duration-300 ${
+                  isFeatured
+                    ? "scale-[1.02] border-[#e91e8c] bg-[linear-gradient(180deg,#fff_0%,#fff0f7_100%)] shadow-[0_24px_70px_rgba(233,30,140,0.18)]"
+                    : "border-[#f8b4d4] bg-white shadow-[0_18px_50px_rgba(233,30,140,0.08)] hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(233,30,140,0.14)]"
+                }`}
+              >
+                {isFeatured ? (
+                  <div className="absolute right-[-34px] top-5 rotate-45 bg-[#f59e0b] px-10 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white">
+                    Most Loved
+                  </div>
+                ) : null}
+
+                <div
+                  className="px-6 py-5 text-white"
+                  style={{
+                    background: isFeatured
+                      ? "linear-gradient(135deg, #ff6b9d 0%, #e91e8c 55%, #c4177a 100%)"
+                      : "linear-gradient(135deg, #ff8db6 0%, #e91e8c 100%)"
+                  }}
+                >
+                  <span className="inline-flex rounded-full border border-white/40 bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
                     {plan.tagline}
-                  </p>
-                  <h2 className="mt-3 text-2xl font-semibold text-forest">
+                  </span>
+                </div>
+
+                <div className="flex h-full flex-col px-6 py-7">
+                  <h2 className="text-3xl font-bold text-[#2d1b35]">
                     {plan.name}
                   </h2>
+                  <p className="mt-3 min-h-[72px] text-sm leading-7 text-[#5a4a6a]">
+                    {plan.description}
+                  </p>
+
+                  <div className="mt-6 border-t border-[#f8b4d4] pt-6">
+                    <p className="text-sm font-medium text-[#9a8aaa] line-through">
+                      {formatCurrency(Math.round(plan.amount * 1.5), plan.currency)}
+                    </p>
+                    <p className="mt-1 text-5xl font-black leading-none text-[#e91e8c]">
+                      {formatCurrency(plan.amount, plan.currency)}
+                    </p>
+                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#9a8aaa]">
+                      Secure one-time payment
+                    </p>
+                  </div>
+
+                  <ul className="mt-6 space-y-3">
+                    {plan.benefits.map((benefit) => (
+                      <li
+                        key={benefit}
+                        className="flex gap-3 rounded-[18px] border border-[#f8b4d4] bg-[#fff7fb] px-4 py-3 text-sm leading-7 text-[#5a4a6a]"
+                      >
+                        <span className="mt-1 text-[#e91e8c]">✦</span>
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePlanSelection(plan.id)}
+                    disabled={isPending}
+                    className={`mt-8 w-full rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.14em] transition ${
+                      isFeatured
+                        ? "bg-[linear-gradient(135deg,#ff6b9d_0%,#e91e8c_50%,#c4177a_100%)] text-white shadow-[0_12px_34px_rgba(233,30,140,0.3)] hover:opacity-95"
+                        : "bg-[#e91e8c] text-white shadow-[0_10px_30px_rgba(233,30,140,0.22)] hover:bg-[#c4177a]"
+                    } disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    {isPending ? "Opening Secure Checkout..." : "Continue to Payment"}
+                  </button>
                 </div>
-                {plan.highlight ? (
-                  <span className="rounded-full bg-ember/10 px-3 py-1 text-xs font-semibold text-ember">
-                    {plan.highlight}
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-4 text-sm leading-7 text-forest/70">
-                {plan.description}
-              </p>
-              <p className="mt-6 font-display text-5xl text-forest">
-                {formatCurrency(plan.amount, plan.currency)}
-              </p>
-              <ul className="mt-6 flex flex-col gap-3 text-sm text-forest/75">
-                {plan.benefits.map((benefit) => (
-                  <li key={benefit} className="rounded-2xl bg-mist px-4 py-3">
-                    {benefit}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8">
-                <Button
-                  fullWidth
-                  onClick={() => handlePlanSelection(plan.id)}
-                  disabled={pendingPlanId === plan.id}
-                >
-                  {pendingPlanId === plan.id
-                    ? "Opening secure checkout..."
-                    : "Continue to payment"}
-                </Button>
-              </div>
-            </section>
-          ))}
+              </section>
+            );
+          })}
         </div>
       </div>
     </main>
