@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const IMGS = {
-  hero: "https://roopveda.co.in/Images/index-main-girl.png",
+  // hero: "https://roopveda.co.in/Images/index-main-girl.png",
+  hero: "Images/hero_section_image.webp",
   cmp1: "/Images/camparison1.png",
   cmp2: "/Images/camparison2.png",
   cmp3: "/Images/camparison3.png"
