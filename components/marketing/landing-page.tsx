@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const IMGS = {
-  hero: "/Images/index-main-girl.png",
+  hero: "/images/index-main-girl.png",
   // hero: "Images/hero_section_image.webp",
-  cmp1: "/Images/camparison1.png",
-  cmp2: "/Images/camparison2.png",
-  cmp3: "/Images/camparison3.png"
+  cmp1: "/images/camparison1.png",
+  cmp2: "/images/camparison2.png",
+  cmp3: "/images/camparison3.png"
 };
 
 const NAV_LINKS = [
