@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { getActiveLead, readAttribution } from "@/lib/meta/attribution";
+import { getActiveLead, readAttribution, readQuizAnalysis } from "@/lib/meta/attribution";
 import { createEventId, trackBrowserMetaEvent } from "@/lib/meta/browser";
+import type { QuizAnalysis } from "@/lib/quiz/analysis";
 import { pricingPlans } from "@/lib/stripe/plans";
 import { formatCurrency } from "@/lib/utils";
 
@@ -17,10 +18,18 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
   const router = useRouter();
   const [pendingPlanId, setPendingPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<QuizAnalysis | null>(null);
 
   const activeLead = useMemo(() => getActiveLead(), []);
   const leadId = initialLeadId ?? activeLead?.leadId ?? null;
   const email = activeLead?.email ?? null;
+  const recommendedPlan = analysis
+    ? pricingPlans.find((plan) => plan.id === analysis.recommendedPlanId) ?? null
+    : null;
+
+  useEffect(() => {
+    setAnalysis(readQuizAnalysis());
+  }, []);
 
   async function handlePlanSelection(planId: string) {
     if (!leadId) {
@@ -82,18 +91,21 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="inline-flex rounded-full border border-[#f8b4d4] bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#e91e8c]">
-                Pricing
+                {recommendedPlan ? "Your Recommendation" : "Pricing"}
               </p>
               <h1 className="mt-5 font-display text-4xl leading-tight text-[#2d1b35] sm:text-5xl">
-                Choose the best next step for your transformation
+                {recommendedPlan
+                  ? `${recommendedPlan.name} looks like your best next step`
+                  : "Choose the best next step for your transformation"}
               </h1>
               <p className="mt-4 text-base leading-8 text-[#5a4a6a] sm:text-lg">
-                {email
+                {analysis?.summary ??
+                  (email
                   ? `Your quiz recommendations are saved for ${email}. Pick the plan that feels right for your glow journey.`
-                  : "Your plan recommendations are ready. Select the offer that fits your momentum best."}
+                  : "Your plan recommendations are ready. Select the offer that fits your momentum best.")}
               </p>
               <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#c4177a]/80">
-                Secure checkout powered by your existing payment flow
+                {analysis?.planReason ?? "Secure checkout powered by your existing payment flow"}
               </p>
             </div>
 
@@ -113,6 +125,22 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
             </div>
           ) : null}
         </header>
+
+        {analysis ? (
+          <section className="mt-8 grid gap-4 md:grid-cols-3">
+            {analysis.insightBullets.map((item) => (
+              <div
+                key={item}
+                className="rounded-[24px] border border-[#f8b4d4] bg-[linear-gradient(180deg,#fff_0%,#fff7fb_100%)] px-5 py-5 shadow-[0_14px_40px_rgba(233,30,140,0.08)]"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#c4177a]">
+                  Insight
+                </p>
+                <p className="mt-3 text-sm leading-7 text-[#5a4a6a]">{item}</p>
+              </div>
+            ))}
+          </section>
+        ) : null}
 
         <section className="mt-8 rounded-[30px] border border-[#f8b4d4] bg-white px-6 py-8 shadow-[0_18px_50px_rgba(233,30,140,0.08)] sm:px-10">
           <h2 className="text-center text-2xl font-semibold text-[#2d1b35]">
@@ -144,17 +172,24 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
           {pricingPlans.map((plan) => {
             const isFeatured = Boolean(plan.highlight);
             const isPending = pendingPlanId === plan.id;
+            const isRecommended = analysis?.recommendedPlanId === plan.id;
 
             return (
               <section
                 key={plan.id}
                 className={`relative overflow-hidden rounded-[30px] border transition-all duration-300 ${
-                  isFeatured
+                  isRecommended
+                    ? "scale-[1.02] border-[#c4177a] bg-[linear-gradient(180deg,#fff_0%,#fff0f7_100%)] shadow-[0_28px_80px_rgba(196,23,122,0.2)]"
+                    : isFeatured
                     ? "scale-[1.02] border-[#e91e8c] bg-[linear-gradient(180deg,#fff_0%,#fff0f7_100%)] shadow-[0_24px_70px_rgba(233,30,140,0.18)]"
                     : "border-[#f8b4d4] bg-white shadow-[0_18px_50px_rgba(233,30,140,0.08)] hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(233,30,140,0.14)]"
                 }`}
               >
-                {isFeatured ? (
+                {isRecommended ? (
+                  <div className="absolute right-4 top-4 rounded-full bg-[#19332d] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white">
+                    Recommended For You
+                  </div>
+                ) : isFeatured ? (
                   <div className="absolute right-[-34px] top-5 rotate-45 bg-[#f59e0b] px-10 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white">
                     Most Loved
                   </div>
@@ -177,6 +212,11 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
                   <h2 className="text-3xl font-bold text-[#2d1b35]">
                     {plan.name}
                   </h2>
+                  {isRecommended ? (
+                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#c4177a]">
+                      Best match based on your quiz answers
+                    </p>
+                  ) : null}
                   <p className="mt-3 min-h-[72px] text-sm leading-7 text-[#5a4a6a]">
                     {plan.description}
                   </p>
@@ -210,12 +250,18 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
                     onClick={() => handlePlanSelection(plan.id)}
                     disabled={isPending}
                     className={`mt-8 w-full rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.14em] transition ${
-                      isFeatured
+                      isRecommended
+                        ? "bg-[linear-gradient(135deg,#19332d_0%,#2f5b52_100%)] text-white shadow-[0_12px_34px_rgba(25,51,45,0.28)] hover:opacity-95"
+                        : isFeatured
                         ? "bg-[linear-gradient(135deg,#ff6b9d_0%,#e91e8c_50%,#c4177a_100%)] text-white shadow-[0_12px_34px_rgba(233,30,140,0.3)] hover:opacity-95"
                         : "bg-[#e91e8c] text-white shadow-[0_10px_30px_rgba(233,30,140,0.22)] hover:bg-[#c4177a]"
                     } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
-                    {isPending ? "Opening Secure Checkout..." : "Continue to Payment"}
+                    {isPending
+                      ? "Opening Secure Checkout..."
+                      : isRecommended
+                        ? "Continue With My Recommendation"
+                        : "Continue to Payment"}
                   </button>
                 </div>
               </section>

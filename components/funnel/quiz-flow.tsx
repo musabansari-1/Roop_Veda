@@ -1338,6 +1338,8 @@ import { useRouter } from "next/navigation";
 import {
   QUIZ_ANSWERS_STORAGE_KEY,
   readAttribution,
+  readQuizAnalysis,
+  setQuizAnalysis,
   setActiveLead
 } from "@/lib/meta/attribution";
 import {
@@ -1345,6 +1347,7 @@ import {
   trackBrowserMetaEvent,
   trackServerMetaEvent
 } from "@/lib/meta/browser";
+import { buildQuizAnalysis, type QuizAnalysis } from "@/lib/quiz/analysis";
 import TopBar from "./top-bar";
 
 const StarRating = () => (
@@ -1387,10 +1390,10 @@ const LockIcon = () => (
 
 const emailCaptureStyles: Record<string, React.CSSProperties> = {
   logoImage: {
-  height: "40px",
-  width: "200px",
-  objectFit: "contain" // keeps aspect ratio, prevents distortion
-},
+    height: "40px",
+    width: "200px",
+    objectFit: "contain" // keeps aspect ratio, prevents distortion
+  },
   page: {
     position: "fixed",
     inset: 0,
@@ -2199,6 +2202,24 @@ const QUESTIONS = [
 ];
 
 const TOTAL_STEPS = QUESTIONS.length;
+const ANALYSIS_STAGES = [
+  {
+    title: "Reading your skin profile",
+    detail: "Reviewing your skin type, sensitivity, and current concerns."
+  },
+  {
+    title: "Mapping your facial goals",
+    detail: "Prioritizing the areas where you want the biggest visible change."
+  },
+  {
+    title: "Matching your daily routine",
+    detail: "Calibrating the plan to the time and habits you can realistically sustain."
+  },
+  {
+    title: "Building your recommendation",
+    detail: "Choosing the best path for your personalized face yoga journey."
+  }
+];
 
 // Sub-components
 function GenderStep({ onSelect, subAnswer, setSubAnswer }: {
@@ -2222,8 +2243,8 @@ function GenderStep({ onSelect, subAnswer, setSubAnswer }: {
           <button
             key={opt.value}
             className={`rounded-2xl border-2 p-3 text-center transition-all bg-white ${selected === opt.value
-                ? "border-ember bg-sand/20 shadow-lg"
-                : "border-mist hover:border-ember/40"
+              ? "border-ember bg-sand/20 shadow-lg"
+              : "border-mist hover:border-ember/40"
               }`}
             onClick={() => handleGender(opt.value)}
             disabled={!!selected}
@@ -2256,8 +2277,8 @@ function SingleStep({ q, onSelect }: {
           <button
             key={o.label}
             className={`w-full p-4 rounded-lg border-2 transition-all flex items-center gap-3 text-left ${selected === o.label
-                ? "border-ember bg-sand/20"
-                : "border-mist hover:border-ember/40 bg-white"
+              ? "border-ember bg-sand/20"
+              : "border-mist hover:border-ember/40 bg-white"
               }`}
             onClick={() => handle(o.label)}
           >
@@ -2291,8 +2312,8 @@ function MultiStep({ q, onNext }: {
           <button
             key={o.label}
             className={`w-full p-4 rounded-lg border-2 transition-all flex items-center gap-3 text-left ${selected.includes(o.label)
-                ? "border-ember bg-sand/20"
-                : "border-mist hover:border-ember/40 bg-white"
+              ? "border-ember bg-sand/20"
+              : "border-mist hover:border-ember/40 bg-white"
               }`}
             onClick={() => toggle(o.label)}
           >
@@ -2392,7 +2413,7 @@ function InfoStep({ q, onContinue }: {
 }) {
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2 className="text-3xl font-semibold text-forest text-center">{q.question}</h2>
       </div>
       <div className="bg-white rounded-2xl p-6 space-y-4">
@@ -2404,6 +2425,52 @@ function InfoStep({ q, onContinue }: {
           <img src={q.afterImg} alt="After" className="w-32 h-40 object-cover rounded-lg" />
         </div>
         {q.caption && <p className="text-center font-semibold text-forest">{q.caption}</p>}
+      </div> */}
+      <div>
+        <h2 className="text-3xl font-semibold text-forest text-center">
+          {q.question}
+        </h2>
+      </div>
+
+      <div className="bg-white rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-center gap-4">
+
+          <img
+            src={q.beforeImg}
+            alt="Before"
+            className="w-32 h-40 object-cover rounded-lg"
+          />
+
+          {/* <svg
+            className="w-12 h-12 text-amber-500"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M8.59 16.59L12 13.17l3.41 3.42 1.41-1.41L13.41 12l3.41-3.41-1.41-1.41L12 10.59 8.59 7.17 7.17 8.59 10.59 12l-3.42 3.41 1.41 1.41z" />
+          </svg> */}
+          <svg
+            className="w-12 h-12 text-amber-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+
+          <img
+            src={q.afterImg}
+            alt="After"
+            className="w-32 h-40 object-cover rounded-lg"
+          />
+
+        </div>
+
+        {q.caption && (
+          <p className="text-center font-semibold text-forest">
+            {q.caption}
+          </p>
+        )}
       </div>
       <button
         className="w-full p-3 rounded-lg bg-forest text-white font-semibold transition-all hover:bg-forest/90"
@@ -2415,12 +2482,131 @@ function InfoStep({ q, onContinue }: {
   );
 }
 
+function AnalysisScreen({
+  analysis,
+  activeStage
+}: {
+  analysis: QuizAnalysis | null;
+  activeStage: number;
+}) {
+  const completedStages = Math.min(activeStage, ANALYSIS_STAGES.length);
+  const progress = Math.round((completedStages / ANALYSIS_STAGES.length) * 100);
+
+  return (
+    <div className="w-full max-w-5xl">
+      <div className="overflow-hidden rounded-[32px] border border-white/70 bg-white/95 shadow-[0_30px_90px_rgba(45,27,53,0.18)] backdrop-blur">
+        <div className="bg-[linear-gradient(135deg,#2d1b35_0%,#5a314a_48%,#e85d7f_100%)] px-6 py-8 text-white sm:px-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">
+            Personalized Analysis
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+            {analysis?.firstName
+              ? `Analyzing your answers, ${analysis.firstName}`
+              : "Analyzing your answers"}
+          </h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">
+            {analysis?.summary ??
+              "We are turning your quiz responses into a face yoga recommendation built around your skin goals and daily rhythm."}
+          </p>
+
+          <div className="mt-6">
+            <div className="h-2 overflow-hidden rounded-full bg-white/20">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#ffd5e5_0%,#ffffff_100%)] transition-all duration-700"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="mt-2 text-sm font-medium text-white/75">
+              {progress}% complete
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 px-6 py-8 sm:px-10 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-4">
+            {ANALYSIS_STAGES.map((stage, index) => {
+              const isComplete = index < completedStages;
+              const isActive = index === activeStage && activeStage < ANALYSIS_STAGES.length;
+
+              return (
+                <div
+                  key={stage.title}
+                  className={`rounded-[24px] border px-5 py-5 transition-all ${
+                    isComplete
+                      ? "border-[#f3a8c9] bg-[#fff4f9]"
+                      : isActive
+                        ? "border-[#e85d7f] bg-[#fff8fb] shadow-[0_14px_40px_rgba(232,93,127,0.14)]"
+                        : "border-[#f4d4e2] bg-white"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                        isComplete
+                          ? "bg-[#10b981] text-white"
+                          : isActive
+                            ? "bg-[#e85d7f] text-white"
+                            : "bg-[#fdf0f6] text-[#c76a8b]"
+                      }`}
+                    >
+                      {isComplete ? "✓" : index + 1}
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-[#2d1b35]">
+                        {stage.title}
+                      </h2>
+                      <p className="mt-1 text-sm leading-6 text-[#6f6076]">
+                        {stage.detail}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-[24px] border border-[#f3a8c9] bg-[linear-gradient(180deg,#fff8fb_0%,#fff2f7_100%)] p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#c4177a]">
+                What we found
+              </p>
+              <ul className="mt-4 space-y-3">
+                {(analysis?.insightBullets ?? []).map((item) => (
+                  <li
+                    key={item}
+                    className="rounded-[18px] border border-[#f7c7db] bg-white px-4 py-3 text-sm leading-6 text-[#5a4a6a]"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-[24px] border border-[#eddde6] bg-white p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8f7b93]">
+                Recommendation logic
+              </p>
+              <p className="mt-3 text-sm leading-7 text-[#5a4a6a]">
+                {analysis?.planReason ??
+                  "Balancing your concerns, goals, and daily commitment to choose the best plan fit."}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main component
 export function QuizFlow() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [subAnswer, setSubAnswer] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<number, any>>({});
+  const [analysis, setAnalysis] = useState<QuizAnalysis | null>(null);
+  const [showAnalysisScreen, setShowAnalysisScreen] = useState(false);
+  const [analysisStage, setAnalysisStage] = useState(0);
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -2443,6 +2629,35 @@ export function QuizFlow() {
     });
   }, []);
 
+  useEffect(() => {
+    const savedAnalysis = readQuizAnalysis();
+
+    if (savedAnalysis) {
+      setAnalysis(savedAnalysis);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showAnalysisScreen) {
+      return;
+    }
+
+    if (analysisStage >= ANALYSIS_STAGES.length) {
+      const timeout = window.setTimeout(() => {
+        setShowAnalysisScreen(false);
+        setShowEmailCapture(true);
+      }, 350);
+
+      return () => window.clearTimeout(timeout);
+    }
+
+    const timeout = window.setTimeout(() => {
+      setAnalysisStage((currentStage) => currentStage + 1);
+    }, analysisStage === 0 ? 900 : 1150);
+
+    return () => window.clearTimeout(timeout);
+  }, [analysisStage, showAnalysisScreen]);
+
   const progress = Math.round((step / TOTAL_STEPS) * 100);
 
   const advance = (val: any) => {
@@ -2454,7 +2669,11 @@ export function QuizFlow() {
     );
 
     if (step + 1 >= TOTAL_STEPS) {
-      setShowEmailCapture(true);
+      const nextAnalysis = buildQuizAnalysis(newAnswers);
+      setAnalysis(nextAnalysis);
+      setQuizAnalysis(nextAnalysis);
+      setAnalysisStage(0);
+      setShowAnalysisScreen(true);
     } else {
       setStep(s => s + 1);
     }
@@ -2583,16 +2802,21 @@ export function QuizFlow() {
             <div style={emailCaptureStyles.divider} />
 
             <div style={emailCaptureStyles.heroSection}>
-              <div style={emailCaptureStyles.badge}>✅ Analysis Complete</div>
+              <div style={emailCaptureStyles.badge}>Analysis Complete</div>
               <h2 style={emailCaptureStyles.heading}>
                 Your Personal Plan
                 <br />
                 <span style={emailCaptureStyles.headingAccent}>Is Ready</span>
               </h2>
               <p style={emailCaptureStyles.subheading}>
-                You Could Look{" "}
-                <strong style={emailCaptureStyles.strong}>Years Younger</strong>{" "}
-                If You Start Today
+                {analysis?.summary ??
+                  "Enter your email to unlock your personalized face yoga plan."}
+              </p>
+              <p style={{ ...emailCaptureStyles.subheading, marginTop: "10px" }}>
+                <strong style={emailCaptureStyles.strong}>
+                  {analysis?.planReason ??
+                    "Your answers have been matched to the best next step."}
+                </strong>
               </p>
             </div>
 
@@ -2670,40 +2894,43 @@ export function QuizFlow() {
         </div>
       )}
 
-      {/* Main Quiz Card - Wider */}
-      <div className="w-full max-w-4xl mb-8">
-        <div className="bg-white rounded-[32px] shadow-glow p-6 sm:p-10 lg:p-12 flex flex-col gap-6 border border-white/80">
-          {/* Progress Bar Inside Card at Top */}
-          <div className="w-full">
-            <div className="h-1.5 rounded-full bg-mist overflow-hidden shadow-sm">
-              <div
-                className="h-full bg-gradient-to-r from-forest to-ember transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
+      {showAnalysisScreen ? (
+        <AnalysisScreen analysis={analysis} activeStage={analysisStage} />
+      ) : (
+        <div className="w-full max-w-4xl mb-8">
+          <div className="bg-white rounded-[32px] shadow-glow p-6 sm:p-10 lg:p-12 flex flex-col gap-6 border border-white/80">
+            {/* Progress Bar Inside Card at Top */}
+            <div className="w-full">
+              <div className="h-1.5 rounded-full bg-mist overflow-hidden shadow-sm">
+                <div
+                  className="h-full bg-gradient-to-r from-forest to-ember transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="mt-2 text-center text-sm text-forest/60">
+                <span className="font-semibold">{progress}%</span>
+              </div>
             </div>
-            <div className="mt-2 text-center text-sm text-forest/60">
-              <span className="font-semibold">{progress}%</span>
-            </div>
-          </div>
 
-          {q.type === "info" ? (
-            <InfoStep q={q} onContinue={() => advance(true)} />
-          ) : q.type === "gender" ? (
-            <GenderStep onSelect={advance} subAnswer={subAnswer} setSubAnswer={setSubAnswer} />
-          ) : q.type === "multi" ? (
-            <MultiStep key={step} q={q} onNext={advance} />
-          ) : q.type === "text" ? (
-            <TextStep key={step} q={q} onSelect={advance} />
-          ) : q.type === "number" ? (
-            <NumberStep key={step} q={q} onSelect={advance} />
-          ) : (
-            <SingleStep key={step} q={q} onSelect={advance} />
-          )}
+            {q.type === "info" ? (
+              <InfoStep q={q} onContinue={() => advance(true)} />
+            ) : q.type === "gender" ? (
+              <GenderStep onSelect={advance} subAnswer={subAnswer} setSubAnswer={setSubAnswer} />
+            ) : q.type === "multi" ? (
+              <MultiStep key={step} q={q} onNext={advance} />
+            ) : q.type === "text" ? (
+              <TextStep key={step} q={q} onSelect={advance} />
+            ) : q.type === "number" ? (
+              <NumberStep key={step} q={q} onSelect={advance} />
+            ) : (
+              <SingleStep key={step} q={q} onSelect={advance} />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Back button */}
-      {step > 0 && !showEmailCapture && (
+      {step > 0 && !showEmailCapture && !showAnalysisScreen && (
         <button
           onClick={() => setStep(s => s - 1)}
           className="text-forest/70 hover:text-forest font-medium text-lg mt-2"
