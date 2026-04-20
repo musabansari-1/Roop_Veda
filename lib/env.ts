@@ -12,7 +12,7 @@ const serverEnvSchema = z.object({
     .default("change-this-development-secret-before-production"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   NEXT_PUBLIC_BRAND_NAME: z.string().default("Roop Veda"),
-  NEXT_PUBLIC_DEFAULT_CURRENCY: z.string().default("usd"),
+  NEXT_PUBLIC_DEFAULT_CURRENCY: z.string().default("inr"),
   NEXT_PUBLIC_META_PIXEL_ID: z.string().optional(),
   META_ACCESS_TOKEN: z.string().optional(),
   META_API_VERSION: z.string().default("v19.0"),

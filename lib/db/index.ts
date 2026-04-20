@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { sql } from "@/lib/db/client";
+import { isProduction } from "@/lib/env";
 
 export type UserRecord = {
   id: string;
@@ -67,6 +68,72 @@ declare global {
   var __roopVedaSchemaReady: boolean | undefined;
   // eslint-disable-next-line no-var
   var __roopVedaSchemaPromise: Promise<void> | undefined;
+  // eslint-disable-next-line no-var
+  var __roopVedaDbAvailable: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __roopVedaDbFallbackWarned: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __roopVedaMemoryDb:
+    | {
+        users: Map<string, UserRecord>;
+        usersByEmail: Map<string, string>;
+        leads: Map<string, LeadRecord>;
+        purchases: Map<string, PurchaseRecord>;
+        purchasesBySessionId: Map<string, string>;
+        passwordResetTokens: Map<string, PasswordResetTokenRecord>;
+        passwordResetTokensByHash: Map<string, string>;
+        videos: Map<string, VideoRecord>;
+      }
+    | undefined;
+}
+
+function getMemoryDb() {
+  if (!global.__roopVedaMemoryDb) {
+    global.__roopVedaMemoryDb = {
+      users: new Map(),
+      usersByEmail: new Map(),
+      leads: new Map(),
+      purchases: new Map(),
+      purchasesBySessionId: new Map(),
+      passwordResetTokens: new Map(),
+      passwordResetTokensByHash: new Map(),
+      videos: new Map()
+    };
+  }
+
+  return global.__roopVedaMemoryDb;
+}
+
+function isDatabaseConnectionError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const postgresError = error as Error & { code?: string; errno?: number };
+  const message = error.message.toLowerCase();
+
+  return (
+    postgresError.code === "ECONNREFUSED" ||
+    postgresError.code === "ENOTFOUND" ||
+    postgresError.code === "EAI_AGAIN" ||
+    postgresError.code === "ETIMEDOUT" ||
+    postgresError.errno === -4078 ||
+    message.includes("connect econnrefused") ||
+    message.includes("connection terminated") ||
+    message.includes("timeout")
+  );
+}
+
+function logDatabaseFallback(error: unknown) {
+  if (global.__roopVedaDbFallbackWarned || isProduction) {
+    return;
+  }
+
+  global.__roopVedaDbFallbackWarned = true;
+  console.warn(
+    "[db] Falling back to in-memory storage because the configured database is unavailable.",
+    error
+  );
 }
 
 async function initializeSchema() {
@@ -170,14 +237,30 @@ async function initializeSchema() {
 }
 
 export async function ensureDatabaseSchema() {
+  if (global.__roopVedaDbAvailable === false) {
+    return;
+  }
+
   if (global.__roopVedaSchemaReady) {
+    global.__roopVedaDbAvailable = true;
     return;
   }
 
   if (!global.__roopVedaSchemaPromise) {
-    global.__roopVedaSchemaPromise = initializeSchema().then(() => {
-      global.__roopVedaSchemaReady = true;
-    });
+    global.__roopVedaSchemaPromise = initializeSchema()
+      .then(() => {
+        global.__roopVedaSchemaReady = true;
+        global.__roopVedaDbAvailable = true;
+      })
+      .catch((error) => {
+        if (isDatabaseConnectionError(error) && !isProduction) {
+          global.__roopVedaDbAvailable = false;
+          logDatabaseFallback(error);
+          return;
+        }
+
+        throw error;
+      });
   }
 
   await global.__roopVedaSchemaPromise;
@@ -185,6 +268,12 @@ export async function ensureDatabaseSchema() {
 
 export async function findUserByEmail(email: string) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+    const userId = memoryDb.usersByEmail.get(email);
+    return userId ? memoryDb.users.get(userId) ?? null : null;
+  }
 
   const [user] = await sql<UserRecord[]>`
     select "id", "email", "password", "isPaid", "createdAt", "updatedAt"
@@ -198,6 +287,10 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(id: string) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    return getMemoryDb().users.get(id) ?? null;
+  }
 
   const [user] = await sql<UserRecord[]>`
     select "id", "email", "password", "isPaid", "createdAt", "updatedAt"
@@ -215,6 +308,25 @@ export async function createUser(input: {
   isPaid: boolean;
 }) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+    const now = new Date();
+    const user: UserRecord = {
+      id: randomUUID(),
+      email: input.email,
+      password: input.password,
+      isPaid: input.isPaid,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    memoryDb.users.set(user.id, user);
+    memoryDb.usersByEmail.set(user.email, user.id);
+
+    return user;
+  }
+
   const now = new Date();
 
   const [user] = await sql<UserRecord[]>`
@@ -232,6 +344,27 @@ export async function updateUser(input: {
   isPaid?: boolean;
 }) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+    const existingUser = memoryDb.users.get(input.id);
+
+    if (!existingUser) {
+      return null;
+    }
+
+    const user: UserRecord = {
+      ...existingUser,
+      password: input.password ?? existingUser.password,
+      isPaid: input.isPaid ?? existingUser.isPaid,
+      updatedAt: new Date()
+    };
+
+    memoryDb.users.set(user.id, user);
+    memoryDb.usersByEmail.set(user.email, user.id);
+
+    return user;
+  }
 
   const [user] = await sql<UserRecord[]>`
     update "User"
@@ -261,6 +394,30 @@ export async function createLead(input: {
   pageUrl: string | null;
 }) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+    const lead: LeadRecord = {
+      id: randomUUID(),
+      email: input.email,
+      quizAnswers: input.quizAnswers,
+      source: input.source,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+      utmSource: input.utmSource,
+      utmMedium: input.utmMedium,
+      utmCampaign: input.utmCampaign,
+      fbclid: input.fbclid,
+      fbc: input.fbc,
+      fbp: input.fbp,
+      pageUrl: input.pageUrl,
+      createdAt: new Date()
+    };
+
+    memoryDb.leads.set(lead.id, lead);
+    return lead;
+  }
+
   const now = new Date();
 
   const [lead] = await sql<LeadRecord[]>`
@@ -319,6 +476,10 @@ export async function createLead(input: {
 export async function findLeadById(id: string) {
   await ensureDatabaseSchema();
 
+  if (global.__roopVedaDbAvailable === false) {
+    return getMemoryDb().leads.get(id) ?? null;
+  }
+
   const [lead] = await sql<LeadRecord[]>`
     select
       "id",
@@ -356,6 +517,53 @@ export async function upsertPurchaseBySessionId(input: {
   purchaseEventId?: string;
 }) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+    const existingId = memoryDb.purchasesBySessionId.get(input.stripeSessionId);
+    const existingPurchase = existingId
+      ? memoryDb.purchases.get(existingId) ?? null
+      : null;
+    const now = new Date();
+
+    const purchase: PurchaseRecord = existingPurchase
+      ? {
+          ...existingPurchase,
+          userId: input.userId ?? existingPurchase.userId,
+          leadId: input.leadId ?? existingPurchase.leadId,
+          email: input.email,
+          stripeSessionId: input.stripeSessionId,
+          status: input.status,
+          planId: input.planId,
+          amount: input.amount,
+          currency: input.currency,
+          source: input.source ?? existingPurchase.source,
+          purchaseEventId:
+            input.purchaseEventId ?? existingPurchase.purchaseEventId,
+          updatedAt: now
+        }
+      : {
+          id: randomUUID(),
+          userId: input.userId ?? null,
+          leadId: input.leadId ?? null,
+          email: input.email,
+          stripeSessionId: input.stripeSessionId,
+          status: input.status,
+          planId: input.planId,
+          amount: input.amount,
+          currency: input.currency,
+          source: input.source ?? null,
+          purchaseEventId: input.purchaseEventId ?? null,
+          createdAt: now,
+          updatedAt: now
+        };
+
+    memoryDb.purchases.set(purchase.id, purchase);
+    memoryDb.purchasesBySessionId.set(purchase.stripeSessionId, purchase.id);
+
+    return purchase;
+  }
+
   const now = new Date();
 
   const [purchase] = await sql<PurchaseRecord[]>`
@@ -423,6 +631,12 @@ export async function upsertPurchaseBySessionId(input: {
 export async function findPurchaseBySessionId(stripeSessionId: string) {
   await ensureDatabaseSchema();
 
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+    const purchaseId = memoryDb.purchasesBySessionId.get(stripeSessionId);
+    return purchaseId ? memoryDb.purchases.get(purchaseId) ?? null : null;
+  }
+
   const [purchase] = await sql<PurchaseRecord[]>`
     select
       "id",
@@ -452,6 +666,32 @@ export async function replacePasswordResetToken(input: {
   expiresAt: Date;
 }) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+    const now = new Date();
+
+    for (const token of memoryDb.passwordResetTokens.values()) {
+      if (token.userId === input.userId) {
+        memoryDb.passwordResetTokens.delete(token.id);
+        memoryDb.passwordResetTokensByHash.delete(token.tokenHash);
+      }
+    }
+
+    const token: PasswordResetTokenRecord = {
+      id: randomUUID(),
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+      createdAt: now,
+      userId: input.userId
+    };
+
+    memoryDb.passwordResetTokens.set(token.id, token);
+    memoryDb.passwordResetTokensByHash.set(token.tokenHash, token.id);
+
+    return token;
+  }
+
   const now = new Date();
 
   await sql`
@@ -471,6 +711,12 @@ export async function replacePasswordResetToken(input: {
 export async function findPasswordResetTokenByHash(tokenHash: string) {
   await ensureDatabaseSchema();
 
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+    const tokenId = memoryDb.passwordResetTokensByHash.get(tokenHash);
+    return tokenId ? memoryDb.passwordResetTokens.get(tokenId) ?? null : null;
+  }
+
   const [token] = await sql<PasswordResetTokenRecord[]>`
     select "id", "tokenHash", "expiresAt", "createdAt", "userId"
     from "PasswordResetToken"
@@ -484,6 +730,19 @@ export async function findPasswordResetTokenByHash(tokenHash: string) {
 export async function deletePasswordResetTokensByUserId(userId: string) {
   await ensureDatabaseSchema();
 
+  if (global.__roopVedaDbAvailable === false) {
+    const memoryDb = getMemoryDb();
+
+    for (const token of memoryDb.passwordResetTokens.values()) {
+      if (token.userId === userId) {
+        memoryDb.passwordResetTokens.delete(token.id);
+        memoryDb.passwordResetTokensByHash.delete(token.tokenHash);
+      }
+    }
+
+    return;
+  }
+
   await sql`
     delete from "PasswordResetToken"
     where "userId" = ${userId}
@@ -492,6 +751,10 @@ export async function deletePasswordResetTokensByUserId(userId: string) {
 
 export async function findVideoById(id: string) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    return getMemoryDb().videos.get(id) ?? null;
+  }
 
   const [video] = await sql<VideoRecord[]>`
     select
@@ -512,6 +775,12 @@ export async function findVideoById(id: string) {
 
 export async function listVideos(limit = 30) {
   await ensureDatabaseSchema();
+
+  if (global.__roopVedaDbAvailable === false) {
+    return Array.from(getMemoryDb().videos.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
+  }
 
   return sql<VideoRecord[]>`
     select

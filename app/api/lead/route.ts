@@ -27,6 +27,13 @@ const leadSchema = z.object({
 
 export const runtime = "nodejs";
 
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    message: "Use POST to capture quiz leads."
+  });
+}
+
 function logSideEffectFailure(
   channel: "email" | "meta",
   leadId: string,
