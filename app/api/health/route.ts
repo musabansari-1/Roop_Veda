@@ -32,7 +32,7 @@ export async function GET() {
     environment: isProduction ? "production" : "development",
     integrations: {
       database: databaseOk,
-      stripe: Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET),
+      zaakpay: Boolean(env.ZAAKPAY_MERCHANT_IDENTIFIER && env.ZAAKPAY_SECRET_KEY),
       resend: Boolean(env.RESEND_API_KEY),
       metaPixel: Boolean(env.NEXT_PUBLIC_META_PIXEL_ID),
       metaCapi: Boolean(env.NEXT_PUBLIC_META_PIXEL_ID && env.META_ACCESS_TOKEN),

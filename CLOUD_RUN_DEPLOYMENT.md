@@ -32,8 +32,8 @@ Create these secrets:
 
 - `DATABASE_URL`
 - `AUTH_JWT_SECRET`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
+- `ZAAKPAY_MERCHANT_IDENTIFIER`
+- `ZAAKPAY_SECRET_KEY`
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `META_ACCESS_TOKEN`
@@ -85,7 +85,7 @@ Example:
 ```bash
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions=_IMAGE_URI=asia-south1-docker.pkg.dev/PROJECT_ID/roop-veda/web:latest,_SERVICE_NAME=roop-veda-web,_REGION=asia-south1,_SERVICE_ACCOUNT=roop-veda-run@PROJECT_ID.iam.gserviceaccount.com,_CPU=1,_MEMORY=512Mi,_TIMEOUT=300s,_CONCURRENCY=80,_MIN_INSTANCES=0,_MAX_INSTANCES=10,_ENV_VARS=NEXT_PUBLIC_APP_URL=https://YOUR_RUN_URL,NEXT_PUBLIC_BRAND_NAME=Roop\ Veda,NEXT_PUBLIC_DEFAULT_CURRENCY=usd,GCS_BUCKET_NAME=YOUR_BUCKET,TEMP_MANUAL_ACCESS_ENABLED=false,META_API_VERSION=v19.0,_SECRET_VARS=DATABASE_URL=DATABASE_URL:latest,AUTH_JWT_SECRET=AUTH_JWT_SECRET:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest,RESEND_API_KEY=RESEND_API_KEY:latest,RESEND_FROM_EMAIL=RESEND_FROM_EMAIL:latest,META_ACCESS_TOKEN=META_ACCESS_TOKEN:latest,NEXT_PUBLIC_META_PIXEL_ID=NEXT_PUBLIC_META_PIXEL_ID:latest \
+  --substitutions=_IMAGE_URI=asia-south1-docker.pkg.dev/PROJECT_ID/roop-veda/web:latest,_SERVICE_NAME=roop-veda-web,_REGION=asia-south1,_SERVICE_ACCOUNT=roop-veda-run@PROJECT_ID.iam.gserviceaccount.com,_CPU=1,_MEMORY=512Mi,_TIMEOUT=300s,_CONCURRENCY=80,_MIN_INSTANCES=0,_MAX_INSTANCES=10,_ENV_VARS=NEXT_PUBLIC_APP_URL=https://YOUR_RUN_URL,NEXT_PUBLIC_BRAND_NAME=Roop\ Veda,NEXT_PUBLIC_DEFAULT_CURRENCY=usd,GCS_BUCKET_NAME=YOUR_BUCKET,TEMP_MANUAL_ACCESS_ENABLED=false,META_API_VERSION=v19.0,_SECRET_VARS=DATABASE_URL=DATABASE_URL:latest,AUTH_JWT_SECRET=AUTH_JWT_SECRET:latest,ZAAKPAY_MERCHANT_IDENTIFIER=ZAAKPAY_MERCHANT_IDENTIFIER:latest,ZAAKPAY_SECRET_KEY=ZAAKPAY_SECRET_KEY:latest,RESEND_API_KEY=RESEND_API_KEY:latest,RESEND_FROM_EMAIL=RESEND_FROM_EMAIL:latest,META_ACCESS_TOKEN=META_ACCESS_TOKEN:latest,NEXT_PUBLIC_META_PIXEL_ID=NEXT_PUBLIC_META_PIXEL_ID:latest \
   .
 ```
 
@@ -105,11 +105,11 @@ Then verify:
 - lead capture stores data in Neon
 - emails send from Resend
 - signed video URLs open correctly
-- Stripe webhook points to `/api/stripe/webhook`
+- Zaakpay return URL points to `/api/zaakpay/return`
 
 ## 7. Known production notes
 
 - Resend requires a verified sending domain
-- Stripe will not work until live credentials and webhook secret are set
+- Zaakpay will not work until live merchant credentials and return URL are configured
 - Meta CAPI requires both pixel ID and access token
 - Videos must exist in the DB `Video` table with valid `gcsPath` values

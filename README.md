@@ -4,7 +4,7 @@ Production-ready Next.js 14 App Router funnel for:
 
 - SEO landing traffic on `/`
 - Ads-first quiz traffic on `/quiz`
-- Quiz -> lead capture -> plans -> Stripe checkout -> account setup -> dashboard
+- Quiz -> lead capture -> plans -> Zaakpay checkout -> account setup -> dashboard
 - JWT auth with bcrypt password hashing
 - Meta Pixel + Meta Conversions API deduped by shared `event_id`
 - Resend transactional emails
@@ -17,7 +17,7 @@ Production-ready Next.js 14 App Router funnel for:
 - Tailwind CSS
 - Pure-JS PostgreSQL data layer via `postgres`
 - PostgreSQL for local and production
-- Stripe
+- Zaakpay
 - Resend
 - bcrypt
 - jose-based JWT auth
@@ -28,7 +28,7 @@ Production-ready Next.js 14 App Router funnel for:
 
 1. Copy `.env.example` to `.env`.
 2. Set `DATABASE_URL` to your local or hosted PostgreSQL connection string.
-3. Add your Stripe, Resend, Meta, and GCS credentials when you want those integrations live.
+3. Add your Zaakpay, Resend, Meta, and GCS credentials when you want those integrations live.
 4. Run:
 
 ```bash
@@ -42,7 +42,7 @@ You can also inspect the current integration readiness at:
 
 - `/api/health`
 
-### Local no-Stripe access
+### Local no-gateway access
 
 For local development, this repo includes a disabled-by-default bypass flag:
 
@@ -50,7 +50,7 @@ For local development, this repo includes a disabled-by-default bypass flag:
 DEV_ENABLE_BYPASS_CHECKOUT="true"
 ```
 
-When that flag is enabled outside production and Stripe keys are absent:
+When that flag is enabled outside production and Zaakpay credentials are absent:
 
 1. Open `/quiz`
 2. Complete the email capture
@@ -64,7 +64,7 @@ This bypass is intended only for local testing and is automatically off in produ
 ### Temporary production fallback
 
 If the final gateway is delayed, you can temporarily allow specific approved emails
-to pass through checkout without Stripe in production.
+to pass through checkout without Zaakpay in production.
 
 Set:
 
@@ -75,7 +75,7 @@ TEMP_MANUAL_ACCESS_EMAILS="approved1@example.com,approved2@example.com"
 
 Behavior:
 
-1. approved emails can complete the funnel even if Stripe is not configured
+1. approved emails can complete the funnel even if Zaakpay is not configured
 2. non-approved emails still see checkout blocked
 3. the resulting purchase is stored with `source="manual_access"`
 
@@ -130,10 +130,11 @@ Core:
 - `NEXT_PUBLIC_APP_URL`
 - `DATABASE_URL`
 
-Stripe:
+Zaakpay:
 
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
+- `ZAAKPAY_MERCHANT_IDENTIFIER`
+- `ZAAKPAY_SECRET_KEY`
+- `ZAAKPAY_ENVIRONMENT`
 
 Resend:
 
@@ -187,7 +188,7 @@ Server-side CAPI events:
 - Page views and quiz starts are forwarded through `/api/meta/track`
 - Lead creation sends CAPI from `/api/lead`
 - Checkout initiation sends CAPI from `/api/checkout`
-- Purchase confirmation sends CAPI from `/api/stripe/webhook`
+- Purchase confirmation sends CAPI from the Zaakpay return flow
 
 All deduped business events share the same `event_id` between browser and server.
 
@@ -230,7 +231,7 @@ Suggested GCP flow:
 4. Configure a Cloud Run service account with signed URL access to the bucket.
 5. Store secrets in Secret Manager.
 6. Build and deploy with Cloud Build / Cloud Run.
-7. Set Stripe webhook target to `/api/stripe/webhook`.
+7. Configure Zaakpay return URL to `/api/zaakpay/return`.
 8. Set Meta Pixel and Conversions API credentials.
 9. Set Resend API credentials and verified sender domain.
 
@@ -253,8 +254,8 @@ Recommended Secret Manager secrets:
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `AUTH_JWT_SECRET`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
+- `ZAAKPAY_MERCHANT_IDENTIFIER`
+- `ZAAKPAY_SECRET_KEY`
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `META_ACCESS_TOKEN`
@@ -277,7 +278,7 @@ Deploy with Cloud Build:
 ```bash
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions=_IMAGE_URI=asia-south1-docker.pkg.dev/PROJECT_ID/roop-veda/web:latest,_SERVICE_NAME=roop-veda-web,_REGION=asia-south1,_SERVICE_ACCOUNT=roop-veda-run@PROJECT_ID.iam.gserviceaccount.com,_ENV_VARS=DATABASE_PROVIDER=postgresql,NEXT_PUBLIC_APP_URL=https://YOUR_RUN_URL,NEXT_PUBLIC_BRAND_NAME=Roop\ Veda,NEXT_PUBLIC_DEFAULT_CURRENCY=usd,GCS_BUCKET_NAME=YOUR_BUCKET,TEMP_MANUAL_ACCESS_ENABLED=false,META_API_VERSION=v19.0,_SECRET_VARS=DATABASE_URL=DATABASE_URL:latest,DIRECT_URL=DIRECT_URL:latest,AUTH_JWT_SECRET=AUTH_JWT_SECRET:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest,RESEND_API_KEY=RESEND_API_KEY:latest,RESEND_FROM_EMAIL=RESEND_FROM_EMAIL:latest,META_ACCESS_TOKEN=META_ACCESS_TOKEN:latest,NEXT_PUBLIC_META_PIXEL_ID=NEXT_PUBLIC_META_PIXEL_ID:latest \
+  --substitutions=_IMAGE_URI=asia-south1-docker.pkg.dev/PROJECT_ID/roop-veda/web:latest,_SERVICE_NAME=roop-veda-web,_REGION=asia-south1,_SERVICE_ACCOUNT=roop-veda-run@PROJECT_ID.iam.gserviceaccount.com,_ENV_VARS=DATABASE_PROVIDER=postgresql,NEXT_PUBLIC_APP_URL=https://YOUR_RUN_URL,NEXT_PUBLIC_BRAND_NAME=Roop\ Veda,NEXT_PUBLIC_DEFAULT_CURRENCY=usd,GCS_BUCKET_NAME=YOUR_BUCKET,TEMP_MANUAL_ACCESS_ENABLED=false,META_API_VERSION=v19.0,_SECRET_VARS=DATABASE_URL=DATABASE_URL:latest,DIRECT_URL=DIRECT_URL:latest,AUTH_JWT_SECRET=AUTH_JWT_SECRET:latest,ZAAKPAY_MERCHANT_IDENTIFIER=ZAAKPAY_MERCHANT_IDENTIFIER:latest,ZAAKPAY_SECRET_KEY=ZAAKPAY_SECRET_KEY:latest,RESEND_API_KEY=RESEND_API_KEY:latest,RESEND_FROM_EMAIL=RESEND_FROM_EMAIL:latest,META_ACCESS_TOKEN=META_ACCESS_TOKEN:latest,NEXT_PUBLIC_META_PIXEL_ID=NEXT_PUBLIC_META_PIXEL_ID:latest \
   .
 ```
 
@@ -287,12 +288,12 @@ After deploy:
 2. verify database, GCS, and secret-backed integrations
 3. test `/quiz`
 4. test `/forgot-password`
-5. if Stripe is live, configure and test the webhook
+5. verify Zaakpay checkout and return flow end to end
 
 ## Notes
 
 - Video files are never proxied through the backend.
 - Signed URLs are generated on demand and expire after 30 minutes.
 - `/dashboard` and `/api/videos` are protected by middleware and server checks.
-- If Stripe, Resend, Meta, or GCS credentials are omitted locally, the UI still builds, but those integrations will not complete live actions.
+- If Zaakpay, Resend, Meta, or GCS credentials are omitted locally, the UI still builds, but those integrations will not complete live actions.
 - Without real GCS credentials and private bucket assets, the dashboard can still be accessed locally but protected video playback cannot be fully exercised against live signed URLs.

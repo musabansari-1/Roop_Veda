@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getActiveLead, readAttribution, readQuizAnalysis } from "@/lib/meta/attribution";
 import { createEventId, trackBrowserMetaEvent } from "@/lib/meta/browser";
 import type { QuizAnalysis } from "@/lib/quiz/analysis";
-import { pricingPlans } from "@/lib/stripe/plans";
+import { pricingPlans } from "@/lib/payments/plans";
 import { formatCurrency } from "@/lib/utils";
 
 type PlansGridProps = {
@@ -29,9 +29,9 @@ type FaqItem = {
 const PAGE_CSS = `
 .rv-checkout, .rv-checkout * { box-sizing:border-box; }
 .rv-checkout {
-  --primary:#e86a33;
-  --primary-dark:#c85726;
-  --secondary:#f19a68;
+  --primary:#f53163;
+  --primary-dark:#d61d4c;
+  --secondary:#ff7f9f;
   --bg:#f8f1e6;
   --text:#19332d;
   --text-light:rgba(25,51,45,0.74);
@@ -40,11 +40,11 @@ const PAGE_CSS = `
   --green:#2e9d65;
   --pink:#fff5ee;
   --muted:#f3e9dc;
-  --gradient:linear-gradient(135deg,#19332d 0%,#2e5b4f 100%);
-  --accent-gradient:linear-gradient(135deg,#e86a33 0%,#f19a68 100%);
+  --gradient:linear-gradient(135deg,#f53163 0%,#ff7f9f 100%);
+  --accent-gradient:linear-gradient(135deg,#f53163 0%,#ff7f9f 100%);
   font-family:var(--font-space-grotesk),sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(232,106,51,0.16), transparent 28%),
+    radial-gradient(circle at top left, rgba(245,49,99,0.16), transparent 28%),
     radial-gradient(circle at bottom right, rgba(25,51,45,0.1), transparent 32%),
     var(--bg);
   color:var(--text);
@@ -52,7 +52,7 @@ const PAGE_CSS = `
 }
 .rv-checkout a { color:inherit; text-decoration:none; }
 .rv-checkout img { max-width:100%; display:block; }
-.rv-checkout .nav-sticky { position:sticky; top:0; z-index:100; background:rgba(255,255,255,0.94); backdrop-filter:blur(18px); box-shadow:0 2px 12px rgba(25,51,45,0.08); border-bottom:1px solid rgba(25,51,45,0.08); }
+.rv-checkout .nav-sticky { position:sticky; top:0; z-index:100; background:rgba(255,255,255,0.94); backdrop-filter:blur(18px); box-shadow:0 2px 12px rgba(245,49,99,0.08); border-bottom:1px solid rgba(245,49,99,0.12); }
 .rv-checkout .nav-top { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; max-width:640px; margin:0 auto; gap:16px; }
 .rv-checkout .nav-logo { font-family:var(--font-fraunces),serif; font-size:1.3rem; font-weight:700; color:var(--text); letter-spacing:-0.02em; }
 .rv-checkout .nav-logo span { color:var(--primary); }
@@ -75,7 +75,7 @@ const PAGE_CSS = `
   letter-spacing:0.04em;
   transition:opacity 0.2s, transform 0.1s;
   text-transform:uppercase;
-  box-shadow:0 14px 30px rgba(232,106,51,0.22);
+  box-shadow:0 14px 30px rgba(245,49,99,0.22);
 }
 .rv-checkout .btn-primary:hover { opacity:0.94; transform:translateY(-1px); }
 .rv-checkout .btn-primary:disabled { cursor:not-allowed; opacity:0.65; transform:none; }
@@ -90,7 +90,7 @@ const PAGE_CSS = `
   cursor:pointer;
   transition:all 0.2s;
 }
-.rv-checkout .btn-white:hover { background:transparent; color:white; }
+.rv-checkout .btn-white:hover { background:#f53163; color:white; border-color:#f53163; }
 .rv-checkout .section { padding:40px 20px; }
 .rv-checkout .section-inner { max-width:560px; margin:0 auto; }
 .rv-checkout .section-alt { background:linear-gradient(180deg, rgba(255,255,255,0.52) 0%, rgba(243,233,220,0.72) 100%); }
@@ -131,8 +131,8 @@ const PAGE_CSS = `
 .rv-checkout .hero-subtitle { font-size:15px; color:var(--text-light); margin-bottom:20px; line-height:1.7; }
 .rv-checkout .hero-subtitle b { color:var(--text); }
 .rv-checkout .analysis-card {
-  background:linear-gradient(135deg, rgba(25,51,45,0.04), rgba(232,106,51,0.08));
-  border:1px solid rgba(232,106,51,0.18);
+  background:linear-gradient(135deg, rgba(25,51,45,0.04), rgba(245,49,99,0.08));
+  border:1px solid rgba(245,49,99,0.18);
   border-radius:14px;
   padding:16px;
   margin-bottom:18px;
@@ -177,8 +177,8 @@ const PAGE_CSS = `
   background:white;
   transition:border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
-.rv-checkout .price-card:hover { border-color:var(--primary); box-shadow:0 6px 22px rgba(232,106,51,0.12); transform:translateY(-1px); }
-.rv-checkout .price-card.popular { border-color:var(--primary); box-shadow:0 8px 24px rgba(232,106,51,0.16); }
+.rv-checkout .price-card:hover { border-color:var(--primary); box-shadow:0 6px 22px rgba(245,49,99,0.12); transform:translateY(-1px); }
+.rv-checkout .price-card.popular { border-color:var(--primary); box-shadow:0 8px 24px rgba(245,49,99,0.16); }
 .rv-checkout .price-card.recommended { border-color:var(--text); box-shadow:0 8px 28px rgba(25,51,45,0.18); }
 .rv-checkout .card-flair {
   background:var(--accent-gradient);
@@ -445,7 +445,7 @@ const PAGE_CSS = `
 .rv-checkout .fb-date { font-size:11px; color:#999; }
 .rv-checkout .fb-reactions { margin-top:10px; font-size:13px; }
 .rv-checkout hr.section-sep { border:none; border-top:1px solid var(--border); margin:0; }
-.rv-checkout .error-box { margin-top:16px; border-radius:12px; border:1px solid rgba(232,106,51,0.28); background:#fff7f2; padding:12px 14px; color:#9c4f2d; font-size:13px; }
+.rv-checkout .error-box { margin-top:16px; border-radius:12px; border:1px solid rgba(245,49,99,0.28); background:#fff4f7; padding:12px 14px; color:#a51f45; font-size:13px; }
 .rv-checkout .plan-scroll-anchor { scroll-margin-top:120px; }
 @media (min-width:600px) {
   .rv-checkout .hero-title { font-size:30px; }
@@ -1035,7 +1035,7 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
                 <span className="stars" style={{ fontSize: 16 }}>
                   ★★★★★
                 </span>
-                <span className="tp-logo">Trustpilot</span>
+                {/* <span className="tp-logo">Trustpilot</span> */}
                 <span>Excellent</span>
               </div>
             </div>
@@ -1157,7 +1157,7 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
                 <span className="stars" style={{ fontSize: 16 }}>
                   ★★★★★
                 </span>
-                <span className="tp-logo">Trustpilot</span>
+                {/* <span className="tp-logo">Trustpilot</span> */}
                 <span>Excellent</span>
               </div>
             </div>
@@ -1224,7 +1224,7 @@ export function PlansGrid({ initialLeadId }: PlansGridProps) {
                 <span className="stars" style={{ fontSize: 16 }}>
                   ★★★★★
                 </span>
-                <span className="tp-logo">Trustpilot</span>
+                {/* <span className="tp-logo">Trustpilot</span> */}
                 <span>Excellent</span>
               </div>
             </div>

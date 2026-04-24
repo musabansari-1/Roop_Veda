@@ -74,7 +74,7 @@ app/
 └── api/                        ← Existing APIs
     ├── auth/
     ├── videos/
-    ├── stripe/
+    ├── zaakpay/
     └── ...
 
 components/
@@ -252,7 +252,7 @@ EXISTING PAGES (preserved):
 
 EXISTING APIs (preserved):
 ├─ Auth APIs
-├─ Stripe APIs
+├─ Zaakpay APIs
 ├─ Video APIs
 └─ More...
 ```
@@ -356,7 +356,7 @@ Hidden Behind Auth:
 
 External Services:
   ✅ Email via Ameerlunera@gmail.com
-  ✅ Stripe payment processing
+  ✅ Zaakpay payment processing
   ✅ Google Cloud Storage for videos
 ```
 

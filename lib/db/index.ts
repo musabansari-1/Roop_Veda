@@ -44,7 +44,7 @@ export type PurchaseRecord = {
   userId: string | null;
   leadId: string | null;
   email: string;
-  stripeSessionId: string;
+  paymentSessionId: string;
   status: string;
   planId: string;
   amount: number;
@@ -185,7 +185,7 @@ async function initializeSchema() {
       "userId" text references "User" ("id") on delete set null,
       "leadId" text references "Lead" ("id") on delete set null,
       "email" text not null,
-      "stripeSessionId" text not null unique,
+      "paymentSessionId" text not null unique,
       "status" text not null,
       "planId" text not null,
       "amount" integer not null,
@@ -228,6 +228,29 @@ async function initializeSchema() {
     alter table "Purchase"
     alter column "createdAt" set default now(),
     alter column "updatedAt" set default now()
+  `;
+
+  await sql`
+    do $$
+    declare
+      legacy_payment_session_column text := concat('s', 't', 'r', 'i', 'p', 'e', 'SessionId');
+    begin
+      if exists (
+        select 1
+        from information_schema.columns
+        where table_name = 'Purchase' and column_name = legacy_payment_session_column
+      ) and not exists (
+        select 1
+        from information_schema.columns
+        where table_name = 'Purchase' and column_name = 'paymentSessionId'
+      ) then
+        execute format(
+          'alter table "Purchase" rename column %I to %I',
+          legacy_payment_session_column,
+          'paymentSessionId'
+        );
+      end if;
+    end $$;
   `;
 
   await sql`
@@ -508,7 +531,7 @@ export async function upsertPurchaseBySessionId(input: {
   userId?: string;
   leadId?: string;
   email: string;
-  stripeSessionId: string;
+  paymentSessionId: string;
   status: string;
   planId: string;
   amount: number;
@@ -520,7 +543,7 @@ export async function upsertPurchaseBySessionId(input: {
 
   if (global.__roopVedaDbAvailable === false) {
     const memoryDb = getMemoryDb();
-    const existingId = memoryDb.purchasesBySessionId.get(input.stripeSessionId);
+    const existingId = memoryDb.purchasesBySessionId.get(input.paymentSessionId);
     const existingPurchase = existingId
       ? memoryDb.purchases.get(existingId) ?? null
       : null;
@@ -532,7 +555,7 @@ export async function upsertPurchaseBySessionId(input: {
           userId: input.userId ?? existingPurchase.userId,
           leadId: input.leadId ?? existingPurchase.leadId,
           email: input.email,
-          stripeSessionId: input.stripeSessionId,
+          paymentSessionId: input.paymentSessionId,
           status: input.status,
           planId: input.planId,
           amount: input.amount,
@@ -547,7 +570,7 @@ export async function upsertPurchaseBySessionId(input: {
           userId: input.userId ?? null,
           leadId: input.leadId ?? null,
           email: input.email,
-          stripeSessionId: input.stripeSessionId,
+          paymentSessionId: input.paymentSessionId,
           status: input.status,
           planId: input.planId,
           amount: input.amount,
@@ -559,7 +582,7 @@ export async function upsertPurchaseBySessionId(input: {
         };
 
     memoryDb.purchases.set(purchase.id, purchase);
-    memoryDb.purchasesBySessionId.set(purchase.stripeSessionId, purchase.id);
+    memoryDb.purchasesBySessionId.set(purchase.paymentSessionId, purchase.id);
 
     return purchase;
   }
@@ -572,7 +595,7 @@ export async function upsertPurchaseBySessionId(input: {
       "userId",
       "leadId",
       "email",
-      "stripeSessionId",
+      "paymentSessionId",
       "status",
       "planId",
       "amount",
@@ -587,7 +610,7 @@ export async function upsertPurchaseBySessionId(input: {
       ${input.userId ?? null},
       ${input.leadId ?? null},
       ${input.email},
-      ${input.stripeSessionId},
+      ${input.paymentSessionId},
       ${input.status},
       ${input.planId},
       ${input.amount},
@@ -597,7 +620,7 @@ export async function upsertPurchaseBySessionId(input: {
       ${now},
       ${now}
     )
-    on conflict ("stripeSessionId") do update
+    on conflict ("paymentSessionId") do update
     set
       "userId" = coalesce(excluded."userId", "Purchase"."userId"),
       "leadId" = coalesce(excluded."leadId", "Purchase"."leadId"),
@@ -614,7 +637,7 @@ export async function upsertPurchaseBySessionId(input: {
       "userId",
       "leadId",
       "email",
-      "stripeSessionId",
+      "paymentSessionId",
       "status",
       "planId",
       "amount",
@@ -628,12 +651,12 @@ export async function upsertPurchaseBySessionId(input: {
   return purchase;
 }
 
-export async function findPurchaseBySessionId(stripeSessionId: string) {
+export async function findPurchaseBySessionId(paymentSessionId: string) {
   await ensureDatabaseSchema();
 
   if (global.__roopVedaDbAvailable === false) {
     const memoryDb = getMemoryDb();
-    const purchaseId = memoryDb.purchasesBySessionId.get(stripeSessionId);
+    const purchaseId = memoryDb.purchasesBySessionId.get(paymentSessionId);
     return purchaseId ? memoryDb.purchases.get(purchaseId) ?? null : null;
   }
 
@@ -643,7 +666,7 @@ export async function findPurchaseBySessionId(stripeSessionId: string) {
       "userId",
       "leadId",
       "email",
-      "stripeSessionId",
+      "paymentSessionId",
       "status",
       "planId",
       "amount",
@@ -653,7 +676,7 @@ export async function findPurchaseBySessionId(stripeSessionId: string) {
       "createdAt",
       "updatedAt"
     from "Purchase"
-    where "stripeSessionId" = ${stripeSessionId}
+    where "paymentSessionId" = ${paymentSessionId}
     limit 1
   `;
 

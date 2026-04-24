@@ -40,7 +40,7 @@ export default function SetupPage() {
 
     async function loadSession() {
       if (!sessionId) {
-        setError("Missing Stripe session ID.");
+        setError("Missing payment session ID.");
         setLoading(false);
         return;
       }

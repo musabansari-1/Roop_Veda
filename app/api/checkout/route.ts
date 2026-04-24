@@ -3,15 +3,14 @@ import { z } from "zod";
 
 import {
   canUseTemporaryManualAccess,
-  env,
   isBypassCheckoutEnabled,
   isTemporaryManualAccessEnabled
 } from "@/lib/env";
 import { findLeadById, upsertPurchaseBySessionId } from "@/lib/db";
 import { sendMetaCapiEvent } from "@/lib/meta/server";
-import { getPlanById } from "@/lib/stripe/plans";
-import { getStripeServer, hasStripe } from "@/lib/stripe/server";
+import { getPlanById } from "@/lib/payments/plans";
 import { getBaseUrl } from "@/lib/utils";
+import { hasZaakpay } from "@/lib/zaakpay/server";
 
 const attributionSchema = z
   .object({
@@ -35,6 +34,13 @@ const checkoutSchema = z.object({
 
 export const runtime = "nodejs";
 
+function createZaakpayOrderId(planId: string, eventId: string) {
+  const normalizedPlanId = planId.replace(/[^a-z0-9]/gi, "").slice(0, 12);
+  const normalizedEventId = eventId.replace(/[^a-z0-9]/gi, "");
+
+  return `${normalizedPlanId}${normalizedEventId}`.slice(0, 40);
+}
+
 export async function POST(request: Request) {
   try {
     const body = checkoutSchema.parse(await request.json());
@@ -51,12 +57,12 @@ export async function POST(request: Request) {
     const canBypassCheckout =
       isBypassCheckoutEnabled || canUseTemporaryManualAccess(lead.email);
 
-    if (!hasStripe() && !canBypassCheckout) {
+    if (!hasZaakpay() && !canBypassCheckout) {
       return NextResponse.json(
         {
           error: isTemporaryManualAccessEnabled
             ? "Payment is not configured yet and this email has not been approved for temporary manual access."
-            : "Stripe is not configured."
+            : "Zaakpay is not configured."
         },
         { status: 503 }
       );
@@ -67,41 +73,10 @@ export async function POST(request: Request) {
     let purchaseStatus = "checkout_started";
     let purchaseSource = lead.source;
 
-    if (hasStripe()) {
-      const stripe = getStripeServer();
+    if (hasZaakpay()) {
       const baseUrl = getBaseUrl(request);
-      const successUrl = `${baseUrl}/setup?session_id={CHECKOUT_SESSION_ID}&purchase_event_id=${body.eventId}`;
-      const cancelUrl = `${baseUrl}/plans?leadId=${lead.id}`;
-
-      const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        allow_promotion_codes: true,
-        customer_email: lead.email,
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: plan.currency,
-              unit_amount: plan.amount,
-              product_data: {
-                name: plan.name,
-                description: plan.description
-              }
-            }
-          }
-        ],
-        metadata: {
-          leadId: lead.id,
-          planId: plan.id,
-          source: lead.source,
-          purchaseEventId: body.eventId
-        }
-      });
-
-      sessionId = session.id;
-      checkoutUrl = session.url ?? `${baseUrl}/plans?leadId=${lead.id}`;
+      sessionId = createZaakpayOrderId(plan.id, body.eventId);
+      checkoutUrl = `${baseUrl}/api/zaakpay/redirect?sessionId=${encodeURIComponent(sessionId)}`;
     } else {
       const baseUrl = getBaseUrl(request);
       sessionId = isBypassCheckoutEnabled
@@ -115,7 +90,7 @@ export async function POST(request: Request) {
     await upsertPurchaseBySessionId({
       leadId: lead.id,
       email: lead.email,
-      stripeSessionId: sessionId,
+      paymentSessionId: sessionId,
       status: purchaseStatus,
       planId: plan.id,
       amount: plan.amount,
@@ -137,11 +112,8 @@ export async function POST(request: Request) {
           fbp: lead.fbp
         },
         customData: {
-          value: hasStripe() ? plan.amount / 100 : 0,
-          currency: (hasStripe()
-            ? plan.currency
-            : env.NEXT_PUBLIC_DEFAULT_CURRENCY
-          ).toUpperCase(),
+          value: hasZaakpay() ? plan.amount / 100 : 0,
+          currency: plan.currency.toUpperCase(),
           source: purchaseSource
         }
       },

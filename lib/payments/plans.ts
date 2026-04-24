@@ -1,5 +1,3 @@
-import { env } from "@/lib/env";
-
 export type PricingPlan = {
   id: string;
   name: string;

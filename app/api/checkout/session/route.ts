@@ -5,8 +5,8 @@ import {
   isBypassCheckoutEnabled
 } from "@/lib/env";
 import { findPurchaseBySessionId } from "@/lib/db";
-import { getPlanById } from "@/lib/stripe/plans";
-import { getStripeServer, hasStripe } from "@/lib/stripe/server";
+import { getPlanById } from "@/lib/payments/plans";
+import { hasZaakpay } from "@/lib/zaakpay/server";
 
 export const runtime = "nodejs";
 
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const purchase = await findPurchaseBySessionId(sessionId);
 
   if (
-    (!hasStripe() &&
+    (!hasZaakpay() &&
       purchase &&
       (isBypassCheckoutEnabled ||
         canUseTemporaryManualAccess(purchase.email))) ||
@@ -48,24 +48,19 @@ export async function GET(request: Request) {
     });
   }
 
-  const stripe = getStripeServer();
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
-  const planId = session.metadata?.planId ?? purchase?.planId ?? "";
-  const plan = getPlanById(planId);
-  const email =
-    session.customer_details?.email ?? session.customer_email ?? purchase?.email;
-
-  if (!email || session.payment_status !== "paid") {
+  if (!purchase || purchase.status !== "paid") {
     return NextResponse.json(
       { error: "Payment has not been verified yet." },
       { status: 400 }
     );
   }
 
+  const plan = getPlanById(purchase.planId);
+
   return NextResponse.json({
-    email,
-    amount: Number(session.amount_total ?? purchase?.amount ?? 0),
-    currency: (session.currency ?? purchase?.currency ?? "usd").toLowerCase(),
+    email: purchase.email,
+    amount: purchase.amount,
+    currency: purchase.currency,
     planName: plan?.name ?? "Roop Veda Plan"
   });
 }

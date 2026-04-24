@@ -17,8 +17,9 @@ const serverEnvSchema = z.object({
   META_ACCESS_TOKEN: z.string().optional(),
   META_API_VERSION: z.string().default("v19.0"),
   META_TEST_EVENT_CODE: z.string().optional(),
-  STRIPE_SECRET_KEY: z.string().optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  ZAAKPAY_MERCHANT_IDENTIFIER: z.string().optional(),
+  ZAAKPAY_SECRET_KEY: z.string().optional(),
+  ZAAKPAY_ENVIRONMENT: z.enum(["staging", "live"]).default("staging"),
   DEV_ENABLE_BYPASS_CHECKOUT: z
     .enum(["true", "false"])
     .default("false")
@@ -60,8 +61,9 @@ export const env = serverEnvSchema.parse({
   META_ACCESS_TOKEN: process.env.META_ACCESS_TOKEN,
   META_API_VERSION: process.env.META_API_VERSION ?? "v19.0",
   META_TEST_EVENT_CODE: process.env.META_TEST_EVENT_CODE,
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  ZAAKPAY_MERCHANT_IDENTIFIER: process.env.ZAAKPAY_MERCHANT_IDENTIFIER,
+  ZAAKPAY_SECRET_KEY: process.env.ZAAKPAY_SECRET_KEY,
+  ZAAKPAY_ENVIRONMENT: process.env.ZAAKPAY_ENVIRONMENT ?? "staging",
   DEV_ENABLE_BYPASS_CHECKOUT:
     process.env.DEV_ENABLE_BYPASS_CHECKOUT ?? "false",
   TEMP_MANUAL_ACCESS_ENABLED:
