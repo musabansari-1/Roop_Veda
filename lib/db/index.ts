@@ -33,6 +33,7 @@ export type VideoRecord = {
   id: string;
   title: string;
   description: string | null;
+  exercises: { title: string; description: string }[] | null;
   gcsPath: string;
   durationSeconds: number | null;
   createdAt: Date;
@@ -116,9 +117,11 @@ function isDatabaseConnectionError(error: unknown) {
     postgresError.code === "ECONNREFUSED" ||
     postgresError.code === "ENOTFOUND" ||
     postgresError.code === "EAI_AGAIN" ||
+    postgresError.code === "EACCES" ||
     postgresError.code === "ETIMEDOUT" ||
     postgresError.errno === -4078 ||
     message.includes("connect econnrefused") ||
+    message.includes("eacces") ||
     message.includes("connection terminated") ||
     message.includes("timeout")
   );
@@ -172,11 +175,17 @@ async function initializeSchema() {
       "id" text primary key,
       "title" text not null,
       "description" text,
+      "exercises" jsonb,
       "gcsPath" text not null,
       "durationSeconds" integer,
       "createdAt" timestamptz not null default now(),
       "updatedAt" timestamptz not null default now()
     )
+  `;
+
+  await sql`
+    alter table "Video"
+    add column if not exists "exercises" jsonb
   `;
 
   await sql`
@@ -784,6 +793,7 @@ export async function findVideoById(id: string) {
       "id",
       "title",
       "description",
+      coalesce("exercises", '[]'::jsonb) as "exercises",
       "gcsPath",
       "durationSeconds",
       "createdAt",
@@ -810,6 +820,7 @@ export async function listVideos(limit = 30) {
       "id",
       "title",
       "description",
+      coalesce("exercises", '[]'::jsonb) as "exercises",
       "gcsPath",
       "durationSeconds",
       "createdAt",

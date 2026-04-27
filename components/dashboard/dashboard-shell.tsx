@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ChevronDown,
+  ChevronUp,
   Check,
   Disc3,
   Lock,
@@ -21,13 +23,57 @@ type VideoItem = {
   id: string;
   title: string;
   description?: string | null;
+  exercises?: ExerciseItem[] | null;
   durationSeconds?: number | null;
   createdAt: string;
+};
+
+type ExerciseItem = {
+  title: string;
+  description: string;
 };
 
 type DashboardShellProps = {
   userEmail: string;
 };
+
+const defaultExercises: ExerciseItem[] = [
+  {
+    title: "Warm-up lift",
+    description:
+      "Sit tall, relax your shoulders, and lift the cheeks with a soft smile for 20 seconds."
+  },
+  {
+    title: "Jaw release",
+    description:
+      "Open and close the jaw slowly while keeping the neck relaxed and breathing evenly."
+  },
+  {
+    title: "Forehead smooth",
+    description:
+      "Place both palms on the forehead and glide outward gently to release tension."
+  },
+   {
+    title: "Jaw release",
+    description:
+      "Open and close the jaw slowly while keeping the neck relaxed and breathing evenly."
+  },
+  {
+    title: "Jaw release",
+    description:
+      "Open and close the jaw slowly while keeping the neck relaxed and breathing evenly."
+  },
+  {
+    title: "Forehead smooth",
+    description:
+      "Place both palms on the forehead and glide outward gently to release tension."
+  },
+   {
+    title: "Jaw release",
+    description:
+      "Open and close the jaw slowly while keeping the neck relaxed and breathing evenly."
+  },
+];
 
 function formatDuration(seconds?: number | null) {
   if (!seconds) {
@@ -46,6 +92,7 @@ export function DashboardShell({ userEmail }: DashboardShellProps) {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
   const [loadingVideoId, setLoadingVideoId] = useState<string | null>(null);
+  const [expandedExerciseIndex, setExpandedExerciseIndex] = useState<number | null>(0);
   const [shareEmail, setShareEmail] = useState(userEmail);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -65,13 +112,27 @@ export function DashboardShell({ userEmail }: DashboardShellProps) {
     async function loadVideos() {
       try {
         const response = await fetch("/api/videos");
-        const data = (await response.json()) as { videos?: VideoItem[] };
+        const data = (await response.json()) as {
+          videos?: VideoItem[];
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "Unable to load your video library.");
+        }
+
         const nextVideos = data.videos ?? [];
         setVideos(nextVideos);
 
         if (nextVideos.length > 0) {
           setActiveVideoId((current) => current ?? nextVideos[0].id);
         }
+      } catch (error) {
+        setStatusMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to load your video library."
+        );
       } finally {
         setLoading(false);
       }
@@ -91,6 +152,7 @@ export function DashboardShell({ userEmail }: DashboardShellProps) {
   async function handleSelectVideo(video: VideoItem) {
     setActiveVideoId(video.id);
     setLoadingVideoId(video.id);
+    setExpandedExerciseIndex(0);
     setStatusMessage(null);
 
     try {
@@ -138,6 +200,10 @@ export function DashboardShell({ userEmail }: DashboardShellProps) {
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
     `Access your Roop Veda dashboard here: ${loginUrl}`
   )}`;
+  const activeExercises =
+    Array.isArray(activeVideo?.exercises) && activeVideo.exercises.length > 0
+      ? activeVideo.exercises
+      : defaultExercises;
 
   return (
     <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -243,58 +309,125 @@ export function DashboardShell({ userEmail }: DashboardShellProps) {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-[30px] border border-forest/10 bg-white p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="eyebrow">Now playing</p>
-                    <h2 className="mt-3 text-2xl font-semibold text-forest">
-                      {activeVideo ? activeVideo.title : "Choose a lesson to begin"}
-                    </h2>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-forest/70">
-                      {activeVideo?.description ?? "Select a lesson to load its private playback link here."}
-                    </p>
-                  </div>
-                  {activeVideo ? (
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-forest/60">
-                      <span className="rounded-full bg-mist px-4 py-2">
-                        Lesson {activeVideoIndex + 1}
-                      </span>
-                      <span className="rounded-full bg-mist px-4 py-2">
-                        {formatDuration(activeVideo.durationSeconds)}
-                      </span>
+              <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+                <div className="rounded-[30px] border border-forest/10 bg-white p-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="eyebrow">Now playing</p>
+                      <h2 className="mt-3 text-2xl font-semibold text-forest">
+                        {activeVideo ? activeVideo.title : "Choose a lesson to begin"}
+                      </h2>
+                      <p className="mt-3 max-w-2xl text-sm leading-7 text-forest/70">
+                        {activeVideo?.description ?? "Select a lesson to load its private playback link here."}
+                      </p>
                     </div>
+                    {activeVideo ? (
+                      <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-forest/60">
+                        <span className="rounded-full bg-mist px-4 py-2">
+                          Lesson {activeVideoIndex + 1}
+                        </span>
+                        <span className="rounded-full bg-mist px-4 py-2">
+                          {formatDuration(activeVideo.durationSeconds)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-6 overflow-hidden rounded-[30px] border border-forest/10 bg-[#f6efe5] p-3 shadow-inner">
+                    <div className="aspect-video overflow-hidden rounded-[24px] bg-forest">
+                      {activeVideoUrl && activeVideo ? (
+                        <video
+                          key={activeVideoUrl}
+                          className="h-full w-full bg-black object-contain"
+                          src={activeVideoUrl}
+                          controls
+                          autoPlay
+                        />
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center bg-[radial-gradient(circle_at_top,rgba(246,178,107,0.18),transparent_45%),linear-gradient(135deg,#17342d_0%,#1d443a_45%,#294f45_100%)] px-6 text-center text-white">
+                          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur">
+                            <PlayCircle className="h-9 w-9" />
+                          </div>
+                          <h3 className="mt-6 text-2xl font-semibold">
+                            Your next Roop Veda session starts here
+                          </h3>
+                          <p className="mt-3 max-w-xl text-sm leading-7 text-white/75">
+                            Pick one of the lesson ovals to load the video player.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {statusMessage ? (
+                    <p className="mt-4 text-sm text-forest/70">{statusMessage}</p>
                   ) : null}
                 </div>
 
-                <div className="mt-6 overflow-hidden rounded-[30px] border border-forest/10 bg-[#f6efe5] p-3 shadow-inner">
-                  <div className="aspect-video overflow-hidden rounded-[24px] bg-forest">
-                    {activeVideoUrl && activeVideo ? (
-                      <video
-                        key={activeVideoUrl}
-                        className="h-full w-full bg-black object-contain"
-                        src={activeVideoUrl}
-                        controls
-                        autoPlay
-                      />
-                    ) : (
-                      <div className="flex h-full flex-col items-center justify-center bg-[radial-gradient(circle_at_top,rgba(246,178,107,0.18),transparent_45%),linear-gradient(135deg,#17342d_0%,#1d443a_45%,#294f45_100%)] px-6 text-center text-white">
-                        <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur">
-                          <PlayCircle className="h-9 w-9" />
-                        </div>
-                        <h3 className="mt-6 text-2xl font-semibold">
-                          Your next Roop Veda session starts here
-                        </h3>
-                        <p className="mt-3 max-w-xl text-sm leading-7 text-white/75">
-                          Pick one of the lesson ovals to load the video player.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <aside className="rounded-[30px] border border-forest/10 bg-white p-5">
+                  <p className="eyebrow">Practice guide</p>
+                  <h3 className="mt-3 text-2xl font-semibold text-forest">
+                    Exercise list
+                  </h3>
+                 
 
-                {statusMessage ? (
-                  <p className="mt-4 text-sm text-forest/70">{statusMessage}</p>
-                ) : null}
+                  {activeExercises.length > 0 ? (
+                    <div className="mt-6 max-h-[26rem] space-y-3 overflow-y-auto pr-2 overscroll-contain">
+                      {activeExercises.map((exercise, index) => {
+                        const isExpanded = expandedExerciseIndex === index;
+
+                        return (
+                          <article
+                            key={`${activeVideo?.id ?? "video"}-${exercise.title}-${index}`}
+                            className={[
+                              "rounded-[24px] border px-4 py-4 transition",
+                              isExpanded
+                                ? "border-[#3E63DD]/30 bg-[#f5f8ff] shadow-[0_14px_32px_rgba(62,99,221,0.08)]"
+                                : "border-forest/10 bg-[#fffaf4]"
+                            ].join(" ")}
+                          >
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedExerciseIndex(isExpanded ? null : index)
+                              }
+                              className="flex w-full items-start gap-3 text-left"
+                            >
+                              <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#3E63DD]/20 bg-white text-sm font-semibold text-[#3E63DD]">
+                                {index + 1}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-base font-semibold text-forest">
+                                  {exercise.title}
+                                </p>
+                                <p
+                                  className={[
+                                    "mt-1 text-sm leading-6 text-forest/65",
+                                    isExpanded ? "" : "line-clamp-2"
+                                  ].join(" ")}
+                                >
+                                  {exercise.description}
+                                </p>
+                              </div>
+                              <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mist text-forest/70">
+                                {isExpanded ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </span>
+                            </button>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="mt-6 rounded-[24px] border border-dashed border-forest/15 bg-[#fffaf4] px-4 py-5 text-sm leading-7 text-forest/65">
+                      Add exercise items to this video&apos;s <code>exercises</code>{" "}
+                      metadata and they will appear here automatically.
+                    </div>
+                  )}
+                </aside>
               </div>
             </div>
           )}

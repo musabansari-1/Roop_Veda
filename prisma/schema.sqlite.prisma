@@ -41,6 +41,7 @@ model Video {
   id              String   @id @default(cuid())
   title           String
   description     String?
+  exercises       String?
   gcsPath         String
   durationSeconds Int?
   createdAt       DateTime @default(now())

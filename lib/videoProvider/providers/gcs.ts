@@ -7,6 +7,7 @@ export type VideoListItem = {
   id: string;
   title: string;
   description?: string | null;
+  exercises?: { title: string; description: string }[] | null;
   durationSeconds?: number | null;
   createdAt: Date;
 };
@@ -26,6 +27,33 @@ function createStorageClient() {
 }
 
 const storage = createStorageClient();
+
+function normalizeExercises(
+  value: unknown
+): { title: string; description: string }[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+
+    const title =
+      "title" in item && typeof item.title === "string" ? item.title : null;
+    const description =
+      "description" in item && typeof item.description === "string"
+        ? item.description
+        : null;
+
+    if (!title || !description) {
+      return [];
+    }
+
+    return [{ title, description }];
+  });
+}
 
 export class GCSVideoProvider {
   async getVideoUrl(videoId: string, userId: string) {
@@ -57,6 +85,7 @@ export class GCSVideoProvider {
       id: video.id,
       title: video.title,
       description: video.description,
+      exercises: normalizeExercises(video.exercises),
       durationSeconds: video.durationSeconds,
       createdAt: video.createdAt
     }));
