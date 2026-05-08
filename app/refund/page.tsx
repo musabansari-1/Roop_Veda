@@ -49,7 +49,7 @@ export default function RefundPage() {
       title="Refund Policy"
       subtitle="Last updated April 8, 2026."
     >
-      <ThemeCard title="Company Information" accent="pink">
+      {/* <ThemeCard title="Company Information" accent="pink">
         <div className="space-y-2 leading-8 text-[#5a4a6a]">
           <p>
             <span className="font-semibold text-[#2d1b35]">Legal Name:</span>{" "}
@@ -68,7 +68,30 @@ export default function RefundPage() {
             Hyderabad, Telangana, India - 500027
           </p>
         </div>
-      </ThemeCard>
+      </ThemeCard> */}
+
+
+      <ThemeCard title="Company Information" accent="pink">
+  <div className="space-y-2 leading-8 text-[#5a4a6a]">
+    <p>
+      <span className="font-semibold text-[#2d1b35]">Legal Name:</span>{" "}
+      Pranav Bhandari
+    </p>
+    <p>
+      <span className="font-semibold text-[#2d1b35]">GSTIN:</span>{" "}
+      36IWUPB7980N1ZC
+    </p>
+    <p>
+      <span className="font-semibold text-[#2d1b35]">Category:</span>{" "}
+      Beauty &amp; Personal Care
+    </p>
+    <p>
+      <span className="font-semibold text-[#2d1b35]">Registered Address:</span>{" "}
+      3-4-526/3, Flat No. 503, Doctor Residency, Barkatpura, Narayanguda,
+      Near Bank of Baroda, Hyderabad, Telangana - 500027, India
+    </p>
+  </div>
+</ThemeCard>
 
       <div className="space-y-6">
         {sections.map((section, index) => (

@@ -32,30 +32,35 @@ export default function ContactPage() {
       subtitle="We’re here to help and answer any question you might have."
     >
       <ThemeCard title="Business Details">
-        <div className="space-y-4 text-[#5a4a6a]">
-          <p>
-            <span className="font-semibold text-[#2d1b35]">Company Name:</span>{" "}
-            Creative Technologies
-          </p>
-          <p>
-            <span className="font-semibold text-[#2d1b35]">Legal Name:</span>{" "}
-            Pranav Bhandari
-          </p>
-          <p>
-            <span className="font-semibold text-[#2d1b35]">GSTIN:</span>{" "}
-            36IWUPB7980N1ZC
-          </p>
-          <div className="flex gap-4 pt-2">
-            <MapPin className="mt-1 h-5 w-5 shrink-0 text-[#e91e8c]" />
-            <div className="space-y-1 leading-7">
-              <p className="font-semibold text-[#2d1b35]">Registered Address</p>
-              <p>Doctor Residency, Barkatpura Narayanguda</p>
-              <p>Hyderabad, Telangana 500027</p>
-              <p>India</p>
-            </div>
-          </div>
-        </div>
-      </ThemeCard>
+  <div className="space-y-4 text-[#5a4a6a]">
+    <p>
+      <span className="font-semibold text-[#2d1b35]">Company Name:</span>{" "}
+      Creative Technlogies
+    </p>
+    <p>
+      <span className="font-semibold text-[#2d1b35]">Legal Name:</span>{" "}
+      Pranav Bhandari
+    </p>
+    <p>
+      <span className="font-semibold text-[#2d1b35]">GSTIN:</span>{" "}
+      36IWUPB7980N1ZC
+    </p>
+
+    <div className="flex gap-4 pt-2">
+      <MapPin className="mt-1 h-5 w-5 shrink-0 text-[#e91e8c]" />
+      <div className="space-y-1 leading-7">
+        <p className="font-semibold text-[#2d1b35]">Registered Address</p>
+        <p>3-4-526/3, Flat No. 503</p>
+        <p>Doctor Residency</p>
+        <p>Barkatpura, Narayanguda</p>
+        <p>Near Bank of Baroda</p>
+        <p>Hyderabad, Telangana 500027</p>
+        <p>India</p>
+      </div>
+    </div>
+  </div>
+</ThemeCard>
+          
 
       <div className="grid gap-8 lg:grid-cols-2">
         <ThemeCard title="Email Support" accent="pink">
