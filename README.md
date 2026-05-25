@@ -1,4 +1,4 @@
-# Roop Veda Funnel
+# Roop Veda
 
 Production-ready Next.js 14 App Router funnel for:
 
